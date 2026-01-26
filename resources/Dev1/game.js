@@ -57,8 +57,9 @@ var FIREWORK = {
 	// Constants
 	GRID_WIDTH: 32, // width of grid
 	GRID_HEIGHT: 32, // height of grid
-	EXPLODE_ROW: 6, // default row of grid where fireworks explode
-    HIGHEST_CREATE_ROW: 12, // highest row where a firework can spawn at
+	EXPLODE_ROW: 9, // default row of grid where fireworks explode
+    HIGHEST_CREATE_ROW: 16, // highest row where a firework can spawn at
+    COLUMN_SPAWN_PADDING: 4, // how many rows on either edge that aren't allowed to spawn fireworks
 	FRAME_RATE: 6,	// animation frame rate; 6/60ths = 10 fps
 	BG_COLOR: 0x383761, // background color
 	// DROP_COLOR: 0x4040FF, // raindrop color
@@ -74,7 +75,7 @@ var FIREWORK = {
         {
             // Red
             color: 0xFF0000,
-            speedRange: [ 1, 2, 0 ],
+            speedRange: [ 1.5, 2.5, 1 ],
             rowOffsetRange: [ -2, 2 ],
             explodePatterns: [
                 {
@@ -85,8 +86,13 @@ var FIREWORK = {
                 },
                 {
                     color: 0xFF0000,
+                    offsets: []
+                },
+                {
+                    color: 0xff6200,
                     offsets: [
-                        [-1, -1], [1, -1], [1, 1], [-1, 1]
+                        [-2, -1], [-1, -2], [1, -2], [2, -1],
+                        [2, 1], [1, 2], [-1, 2], [-2, 1]
                     ]
                 },
                 {
@@ -97,10 +103,22 @@ var FIREWORK = {
                     ]
                 },
                 {
-                    color: 0xFFFF00,
+                    color: 0xFFA600,
                     offsets: [
-                        [-2, -1], [-1, -2], [1, -2], [2, -1],
-                        [2, 1], [1, 2], [-1, 2], [-2, 1]
+                        [-2, -2], [2, -2], [2, 2], [-2, 2]
+                    ]
+                },
+                {
+                    color: 0xffd500,
+                    offsets: [
+                        [-3, -2], [-2, -3], [2, -3], [3, -2],
+                        [3, 2], [2, 3], [-2, 3], [-3, 2]
+                    ]
+                },
+                {
+                    color: 0xffd500,
+                    offsets: [
+                        [-4, -4], [4, -4], [4, 4], [-4, 4]
                     ]
                 },
             ],
@@ -108,13 +126,44 @@ var FIREWORK = {
         {
             // Yellow
             color: 0xFFFF00,
-            speedRange: [ 1, 2, 0 ],
+            speedRange: [ 2, 3, 1 ],
             rowOffsetRange: [ -2, 2 ],
             explodePatterns: [
                 {
-                    color: 0xFF0000,
+                    color: 0xFFFF00,
                     offsets: [
-                        [-1, -1], [1, -1], [1, 1], [-1, 1]
+                        [-1, 0], [0, 1], [1, 0], [0, -1]
+                    ]
+                },
+                {
+                    color: 0xFFFF00,
+                    offsets: [
+                        [-2, 0], [0, 2], [2, 0], [0, -2]
+                    ]
+                },
+                {
+                    color: 0xffff4f,
+                    offsets: [
+                        [-2, 0], [0, 2], [2, 0], [0, -2]
+                    ]
+                },
+                {
+                    color: 0xffff4f,
+                    offsets: [
+                        [-3, 1], [-3, -1], [-1, 3], [1, 3],
+                        [3, -1], [3, 1], [1, -3], [-1, -3]
+                    ]
+                },
+                {
+                    color: 0xffff4f,
+                    offsets: [
+                        [-4, 0], [0, 4], [4, 0], [0, -4]
+                    ]
+                },
+                {
+                    color: 0xffff96,
+                    offsets: [
+                        [-5, 0], [0, 5], [5, 0], [0, -5]
                     ]
                 },
             ]
@@ -122,13 +171,45 @@ var FIREWORK = {
         {
             // Lime
             color: 0x00FF00,
-            speedRange: [ 1, 2, 0 ],
+            speedRange: [ 3, 4, 1 ],
             rowOffsetRange: [ -2, 2 ],
             explodePatterns: [
                 {
-                    color: 0xFF0000,
+                    color: 0x00FF00,
                     offsets: [
-                        [-1, -1], [1, -1], [1, 1], [-1, 1]
+                        [-2, 0], [2, 0], [0, 2], [0, -2]
+                    ]
+                },
+                {
+                    color: 0x00FF00,
+                    offsets: [
+                        [-2, -2], [2, -2], [2, 2], [-2, 2],
+                        [-2, 0], [2, 0], [0, 2], [0, -2]
+                    ]
+                },
+                {
+                    color: 0x00FF00,
+                    offsets: [
+                        [-2, -2], [2, -2], [2, 2], [-2, 2],
+                    ]
+                },
+                {
+                    color: 0x00ff6e,
+                    offsets: [
+                        [-3, -2], [-3, 2], [3, -2], [3, 2],
+                        [-2, -3], [-2, 3], [2, -3], [2, 3]
+                    ]
+                },
+                {
+                    color: 0x00ff6e,
+                    offsets: [
+                        [-3, -3], [3, -3], [3, 3], [-3, 3],
+                    ]
+                },
+                {
+                    color: 0x00ffc8,
+                    offsets: [
+                        [-4, -4], [4, -4], [4, 4], [-4, 4],
                     ]
                 },
             ]
@@ -137,12 +218,46 @@ var FIREWORK = {
             // Cyan
             color: 0x00FFFF,
             speedRange: [ 1, 1, 0 ],
-            rowOffsetRange: [ 1, 3 ],
+            rowOffsetRange: [ -2, 2 ],
             explodePatterns: [
                 {
-                    color: 0xFF0000,
+                    color: 0x00FFFF,
+                    offsets: []
+                },
+                {
+                    color: 0x00FFFF,
                     offsets: [
                         [-1, -1], [1, -1], [1, 1], [-1, 1]
+                    ]
+                },
+                {
+                    color: 0x00FFFF,
+                    offsets: [
+                        [-2, 0], [0, -2], [2, 0], [0, 2]
+                    ]
+                },
+                {
+                    color: 0x00aeff,
+                    offsets: [
+                        [-1, -1], [1, -1], [1, 1], [-1, 1]
+                    ]
+                },
+                {
+                    color: 0x00aeff,
+                    offsets: [
+                        [-2, -2], [2, -2], [2, 2], [-2, 2]
+                    ]
+                },
+                {
+                    color: 0x00aeff,
+                    offsets: [
+                        [-2, -2], [2, -2], [2, 2], [-2, 2]
+                    ]
+                },
+                {
+                    color: 0x004cff,
+                    offsets: [
+                        [-3, -3], [3, -3], [3, 3], [-3, 3]
                     ]
                 },
             ]
@@ -150,8 +265,8 @@ var FIREWORK = {
         {
             // Purple
             color: 0xA600FF,
-            speedRange: [ 1, 2, 1 ],
-            rowOffsetRange: [ -2, 0 ],
+            speedRange: [ 2, 3, 1 ],
+            rowOffsetRange: [ -2, 2 ],
             explodePatterns: [
                 {
                     color: 0xA600FF,
@@ -185,13 +300,19 @@ var FIREWORK = {
                         [-2, -2], [-2, 2], [2, 2], [2, -2],
                     ]
                 },
+                {
+                    color: 0x4400ff,
+                    offsets: [
+                        [-3, -3], [-3, 3], [3, 3], [3, -3],
+                    ]
+                },
             ]
         },
         {
             // Magenta
             color: 0xFF00FF,
-            speedRange: [ 1, 2, 1 ],
-            rowOffsetRange: [ -2, 0 ],
+            speedRange: [ 2, 4, 1 ],
+            rowOffsetRange: [ -2, 2 ],
             explodePatterns: [
                 {
                     color: 0xFF00FF,
@@ -220,6 +341,12 @@ var FIREWORK = {
                     color: 0xff478b,
                     offsets: [
                         [-3, 0], [3, 0], [0, 3], [0, -3],
+                    ]
+                },
+                {
+                    color: 0xff478b,
+                    offsets: [
+                        [-4, 0], [0, 4], [4, 0], [0, -4]
                     ]
                 },
             ]
@@ -258,8 +385,6 @@ var FIREWORK = {
             if (offsetY < 0 || offsetY >= FIREWORK.GRID_HEIGHT - 1) {
                 return;
             }
-            // PS.debug("GRID = [" + FIREWORK.GRID_WIDTH + ", " + FIREWORK.GRID_HEIGHT + "]");
-            // PS.debug("x = " + offsetX + ", y=" + offsetY );
             PS.color( offsetX, offsetY, color );
         });
     },
@@ -395,8 +520,9 @@ This function doesn't have to do anything. Any value returned is ignored.
 */
 
 PS.touch = function( x, y, data, options ) {
-    PS.debug(" x = " + x  + ", y=" + y + "\n");
-    if (y >= FIREWORK.HIGHEST_CREATE_ROW) {
+    if (y >= FIREWORK.HIGHEST_CREATE_ROW && (x >= FIREWORK.COLUMN_SPAWN_PADDING &&
+        x < FIREWORK.GRID_WIDTH - FIREWORK.COLUMN_SPAWN_PADDING)
+    ) {
         // Spawn a firework at this bead
         
         // Pick a random firework style to use and add it
@@ -405,7 +531,6 @@ PS.touch = function( x, y, data, options ) {
         const speed = FIREWORK.pickOnRandomRange(speedRange[0], speedRange[1], speedRange[2]);
         const rowOffsetRange = style.rowOffsetRange;
         const rowOffset = FIREWORK.pickOnRandomRange(rowOffsetRange[0], rowOffsetRange[1]);
-        PS.debug("New firework at x = " + x + ", y = " + y + ", speed = " + speed + ", rowOffset = " + rowOffset + "\n");
         FIREWORK.fireworks.push( {
             x: x,
             y: y,
@@ -417,18 +542,6 @@ PS.touch = function( x, y, data, options ) {
 		PS.color( x, y, style.color );
 		// PS.audioPlay( "fx_drip1" );
     }
-    else {
-        // Too high up to spawn a firework
-        
-    }
-
-	// Uncomment the following code line
-	// to inspect x/y parameters:
-
-	// PS.debug( "PS.touch() @ " + x + ", " + y + "\n" );
-
-	// Add code here for mouse clicks/touches
-	// over a bead.
 };
 
 /*
