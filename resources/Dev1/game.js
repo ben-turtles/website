@@ -415,6 +415,7 @@ var FIREWORK = {
                 // Reached explode row, start to explode
                 firework.exploding = true;
                 firework.explodeTimer = 0;
+		        PS.audioPlay( "fx_blast" + firework.blastNum );
             }
 
             if (firework.exploding) {
@@ -471,42 +472,16 @@ PS.init = function( system, options ) {
     PS.gridColor( FIREWORK.BG_COLOR );
 	PS.color( PS.ALL, PS.ALL, FIREWORK.BG_COLOR );
 	PS.border( PS.ALL, PS.ALL, 0 );
+
+    // Load and lock audio
+	PS.audioLoad( "fx_swoosh", { lock : true } );
+	PS.audioLoad( "fx_blast1", { lock : true } );
+	PS.audioLoad( "fx_blast2", { lock : true } );
+	PS.audioLoad( "fx_blast3", { lock : true } );
+	PS.audioLoad( "fx_blast4", { lock : true } );
     
     // Start timer to animate fireworks
 	PS.timerStart( FIREWORK.FRAME_RATE, FIREWORK.tick );
-
-
-	// // Change background color
-
-	// PS.gridColor( RAIN.BG_COLOR );
-
-	// // Hide all bead borders
-
-	// PS.border( PS.ALL, PS.ALL, 0 );
-
-	// // Set all beads to background color
-
-	// PS.color( PS.ALL, PS.ALL, RAIN.BG_COLOR );
-
-	// // Add fader FX to bottom row only
-	// // This makes the beads flash white when they "splash"
-
-	// PS.fade( PS.ALL, RAIN.BOTTOM_ROW, 30, { rgb : PS.COLOR_WHITE } );
-
-	// // Load and lock audio files
-
-	// PS.audioLoad( "fx_drip1", { lock : true } );
-	// PS.audioLoad( "fx_drip2", { lock : true } );
-
-	// // Set color and text of title
-
-	// PS.statusColor( PS.COLOR_WHITE );
-	// PS.statusText( "Simple Rain Toy" );
-
-	// // Start the animation timer
-
-	// PS.timerStart( RAIN.FRAME_RATE, RAIN.tick );
-    
 };
 
 /*
@@ -531,16 +506,17 @@ PS.touch = function( x, y, data, options ) {
         const speed = FIREWORK.pickOnRandomRange(speedRange[0], speedRange[1], speedRange[2]);
         const rowOffsetRange = style.rowOffsetRange;
         const rowOffset = FIREWORK.pickOnRandomRange(rowOffsetRange[0], rowOffsetRange[1]);
+        const blastNum = PS.random(4);
         FIREWORK.fireworks.push( {
             x: x,
             y: y,
+            blastNum: blastNum,
             rowOffset: rowOffset,
             speed: speed,
             style: style,
         } );
-
 		PS.color( x, y, style.color );
-		// PS.audioPlay( "fx_drip1" );
+		PS.audioPlay( "fx_swoosh" );
     }
 };
 
