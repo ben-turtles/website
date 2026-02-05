@@ -17,7 +17,96 @@ Shape = {
 
 PB_GAME.UTIL = {};
 
-// General util
+// Timers
+
+// Runs handler every step, returning string to cancel with timerStop.
+PB_GAME.UTIL.onStep = function(handler) {
+    let tickCount = 0;
+    return PS.timerStart(1, () => {
+        tickCount++;
+        handler(tickCount);
+    })
+}
+
+// Tweens over the duration (IN SECONDS), calling to handler each update with current alpha [0, 1].
+// Calls onFinish if provided once done tweening.
+PB_GAME.UTIL.tweenMethod = function(duration, handler, onFinish) {
+    const durationTicks = duration * 60;
+    let stepTimer;
+    stepTimer = PB_GAME.UTIL.onStep((tickCount) => {
+        const alpha = tickCount / durationTicks;
+        if (alpha >= 1) {
+            if (onFinish != null) {
+                onFinish();
+            }
+            PS.timerStop(stepTimer);
+        }
+        else {
+            handler(alpha);
+        }
+    })
+}
+
+// Runs the handler after the duration (IN SECONDS)
+PB_GAME.UTIL.delay = function(duration, handler) {
+    let timer;
+    timer = PS.timerStart(duration * 60, () => {
+        PS.timerStop(timer);
+        handler();
+    });
+}
+
+// Interpolation
+
+// interpolate(a, b, t)
+PB_GAME.UTIL.lerp = function(a, b, t) {
+    return a + (t * (b - a));
+}
+
+// interpolate(color1, color2, t)
+PB_GAME.UTIL.lerpColor = function(color1, color2, t) {
+    let [r1, g1, b1] = PS.unmakeRGB(color1, []);
+    let [r2, g2, b2] = PS.unmakeRGB(color2, []);
+    return PS.makeRGB(
+        PB_GAME.UTIL.lerp(r1, r2, t),
+        PB_GAME.UTIL.lerp(g1, g2, t),
+        PB_GAME.UTIL.lerp(b1, b2, t)
+    );
+}
+
+// Pivots
+
+// Returns if the [x, y] pivot is outside of the grid.
+PB_GAME.UTIL.isPivotOutOfBounds = function(pivot) {
+    return pivot[0] < 0 || pivot[0] >= PB_GAME.CONSTANTS.GRID_SIZE
+        || pivot[1] < 0 || pivot[1] >= PB_GAME.CONSTANTS.GRID_SIZE;
+}
+
+// Returns whether the two pivots are overlapping (same position).
+PB_GAME.UTIL.doPivotsOverlap = function(pivot1, pivot2) {
+    return pivot1[0] == pivot2[0] && pivot1[1] == pivot2[1];
+}
+
+// Returns whether the two pivots are adjacent (orthogonally connected).
+PB_GAME.UTIL.arePivotsAdjacent = function(pivot1, pivot2) {
+    const xDiff = Math.abs(pivot1[0] - pivot2[0]);
+    const yDiff = Math.abs(pivot1[1] - pivot2[1]);
+    return (xDiff + yDiff) <= 1;
+}
+
+// Returns [x, y] adding the offset [x, y] to the pivot
+PB_GAME.UTIL.addOffset = function(pivot, offset) {
+    return [pivot[0] + offset[0], pivot[1] + offset[1]];
+}
+
+// Returns the pivot rotated around (0, 0) by the angle (IN RADIANS) by applying a 2D rotation matrix
+PB_GAME.UTIL.rotatePivot = function(pivot, angle) {
+    return [
+        // Make sure to round to avoid float rounding errors
+        Math.round((pivot[0] * Math.cos(angle)) - (pivot[1] * Math.sin(angle))),
+        Math.round((pivot[0] * Math.sin(angle)) + (pivot[1] * Math.cos(angle)))
+    ];
+}
 
 // Fills border around region of the two points with size and color
 PB_GAME.UTIL.fillRegionBorder = function(start, end, size, color) {
@@ -41,6 +130,8 @@ PB_GAME.UTIL.fillRegionBorder = function(start, end, size, color) {
     }
 }
 
+// Shapes
+
 // Fills shape at the pivot with a color
 PB_GAME.UTIL.fillShape = function(pivot, shape, color) {
     const [x, y] = pivot;
@@ -53,9 +144,114 @@ PB_GAME.UTIL.fillShape = function(pivot, shape, color) {
     });
 }
 
+PB_GAME.UTIL.isCellAtOffsetFromPivot = function(pivot, offset, cells) {
+    const pivotWithOffset = PB_GAME.UTIL.addOffset(pivot, offset);
+    return cells.some(otherCell => PB_GAME.UTIL.doPivotsOverlap(otherCell, pivotWithOffset))
+}
+
 // Fills shape border at the pivot with size and color
 PB_GAME.UTIL.fillShapeBorder = function(pivot, shape, size, color) {
-    PB_GAME.UTIL.fillShape(pivot, shape, color);
+    const shapeCells = PB_GAME.UTIL.getShapeCells(pivot, shape);
+    shapeCells.forEach(cell => {
+        let borders = {};
+
+        // If no cell in directions, create a border there
+        if (!PB_GAME.UTIL.isCellAtOffsetFromPivot(cell, [-1, 0], shapeCells)) {
+            borders.left = size;
+        }
+        if (!PB_GAME.UTIL.isCellAtOffsetFromPivot(cell, [1, 0], shapeCells)) {
+            borders.right = size;
+        }
+        if (!PB_GAME.UTIL.isCellAtOffsetFromPivot(cell, [0, -1], shapeCells)) {
+            borders.top = size;
+        }
+        if (!PB_GAME.UTIL.isCellAtOffsetFromPivot(cell, [0, 1], shapeCells)) {
+            borders.bottom = size;
+        }
+        
+        // Set borde
+        const [x, y] = cell;
+        PS.border(x, y, borders);
+        PS.borderColor(x, y, color);
+    });
+}
+
+// Returns [[x, y]], where each is a [x, y] pair of a cell where the shape spans from the pivot.
+PB_GAME.UTIL.getShapeCells = function(pivot, shape) {
+    let cells = [];
+
+    // Find all cells
+    cells.push(pivot);
+    shape.offsets.forEach(offset => {
+        cells.push(PB_GAME.UTIL.addOffset(pivot, offset));
+    })
+    return cells;
+}
+
+// Returns the shape rotated the angle (IN RADIANS) around its pivot
+PB_GAME.UTIL.getRotatedShape = function(shape, angle) {
+    let rotatedOffsets = [];
+    shape.offsets.forEach(offset => {
+        rotatedOffsets.push(PB_GAME.UTIL.rotatePivot(offset, angle));
+    });
+    return {
+        offsets: rotatedOffsets
+    };
+}
+
+// Returns [isValid, blockingWalls], where:
+// - isValid: true if shape is in a valid position at the pivot, avoiding all walls and in bounds
+// - blockingWalls: [[x, y]] for all cells shape overlaps with. If out of bounds, will be null
+PB_GAME.UTIL.getShapePivotValid = function(shape, pivot, walls) {
+    const shapeCells = PB_GAME.UTIL.getShapeCells(pivot, shape);
+    if (shapeCells.some(PB_GAME.UTIL.isPivotOutOfBounds)) {
+        // Out of bounds
+        return [false];
+    }
+
+    // Check walls
+    let isValid = true;
+    let blockingWalls = [];
+    if (walls != null) {
+        for (let i = 0; i < shapeCells.length; i++) {
+            const shapeCell = shapeCells[i];
+            for (let j = 0; j < walls.length; j++) {
+                const wallCell = walls[j];
+                if (PB_GAME.UTIL.doPivotsOverlap(shapeCell, wallCell)) {
+                    // Overlapping a wall
+                    isValid = false;
+                    blockingWalls.push(wallCell);
+                }
+            }
+        }
+    }
+    return [isValid, blockingWalls];
+}
+
+// Returns whether the two shapes are overlapping at their respective pivots.
+PB_GAME.UTIL.doShapesOverlap = function(pivot1, shape1, pivot2, shape2) {
+    const shape1Cells = PB_GAME.UTIL.getShapeCells(pivot1, shape1);
+    const shape2Cells = PB_GAME.UTIL.getShapeCells(pivot2, shape2);
+    if (shape1Cells.length != shape2Cells.length) {
+        // One of the shapes has more cells
+        return false;
+    }
+    for (let i = 0; i < shape1Cells.length; i++) {
+        const shape1Cell = shape1Cells[i];
+        let noOverlap = true;
+        for (let j = 0; j < shape2Cells.length; j++) {
+            const shape2Cell = shape2Cells[j];
+            if (PB_GAME.UTIL.doPivotsOverlap(shape1Cell, shape2Cell)) {
+                noOverlap = false;
+            }
+        }
+        if (noOverlap) {
+            // No cells overlap with this one, invalid
+            return false;
+        }
+    }
+    // Overlapping found
+    return true;
 }
 
 // Actor util
@@ -72,7 +268,46 @@ PB_GAME.UTIL.ACTOR.fillActorBorder = function(actor, size, color) {
     PB_GAME.UTIL.fillShapeBorder(actor.pivot, actor.shape, size, color);
 }
 
-// Get [x, y] pair actor will be at when moving the offset [x, y]
+// Returns [x, y] stating where actor will be at when moving the offset [x, y]
 PB_GAME.UTIL.ACTOR.getOffsetMove = function(actor, offset) {
-    return [actor.pivot[0] + offset[0], actor.pivot[1] + offset[1]];
+    return PB_GAME.UTIL.addOffset(actor.pivot, offset);
+}
+
+// Returns [[x, y]], where each is a [x, y] pair of a cell where the actor spans.
+PB_GAME.UTIL.ACTOR.getActorCells = function(actor) {
+    return PB_GAME.UTIL.getShapeCells(actor.pivot, actor.shape);
+}
+
+// Returns [isValid, blockingWalls], where:
+// - isValid: true if actor is in a valid position, avoiding all walls and in bounds
+// - blockingWalls: [[x, y]] for all cells actor overlaps with. If out of bounds, will be null
+PB_GAME.UTIL.ACTOR.getActorPivotValid = function(actor, walls) {
+    return PB_GAME.UTIL.getShapePivotValid(actor.shape, actor.pivot, walls);
+}
+
+// Returns [rotatedActor, collisionCells], where:
+// - rotatedActor: the actor rotated about the pivot by angle (IN RADIANS) avoiding walls [[x, y]]
+// - blockingWalls: [[x, y]] for all wall cells the actor would collide with if it rotated.
+// If rotating to out of bounds, will be null
+PB_GAME.UTIL.ACTOR.getRotatedActor = function(actor, angle, walls) {
+    let newShape = PB_GAME.UTIL.getRotatedShape(actor.shape, angle);
+    const [isValid, blockingWalls] = PB_GAME.UTIL.getShapePivotValid(newShape, actor.pivot, walls);
+    let newActor;
+    if (isValid) {
+        // Allow rotation
+        newActor = {
+            pivot: actor.pivot,
+            shape: newShape
+        };
+    }
+    else {
+        // Rotation position invalid, leave actor as it was
+        newActor = actor;
+    }
+    return [newActor, blockingWalls];
+}
+
+// Returns whether the two actors are overlapping.
+PB_GAME.UTIL.ACTOR.doActorsOverlap = function(actor1, actor2) {
+    return PB_GAME.UTIL.doShapesOverlap(actor1.pivot, actor1.shape, actor2.pivot, actor2.shape);
 }

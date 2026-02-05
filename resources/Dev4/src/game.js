@@ -14,13 +14,6 @@ PS.init = function(system, options) {
     PS.statusText("Perlenblocks");
 	PS.gridSize(PB_GAME.CONSTANTS.GRID_SIZE, PB_GAME.CONSTANTS.GRID_SIZE);
     PS.gridColor(PB_GAME.CONSTANTS.GRID_BG_COLOR);
-    
-    // Setup grid border
-	PS.border(PS.ALL, PS.ALL, 0);
-    PB_GAME.UTIL.fillRegionBorder(
-        [0, 0], [PB_GAME.CONSTANTS.GRID_SIZE, PB_GAME.CONSTANTS.GRID_SIZE],
-        PB_GAME.CONSTANTS.GRID_BORDER_SIZE, PB_GAME.CONSTANTS.GRID_BORDER_COLOR
-    );
 
     // Start game
     PB_GAME.HANDLER.start();
@@ -42,6 +35,9 @@ PS.keyDown = function(key, shift, ctrl, options) {
     }
     else if (PB_GAME.CONSTANTS.MOVE_RIGHT_KEYS.some(k => k == key)) {
         PB_GAME.HANDLER.tryMovePlayer([1, 0]);
+    }
+    else if (PB_GAME.CONSTANTS.RESET_KEYS.some(k => k == key)) {
+        PB_GAME.HANDLER.resetLevel();
     }
 };
 
