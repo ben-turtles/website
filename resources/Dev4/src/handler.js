@@ -17,7 +17,7 @@ PB_GAME.HANDLER.clearLevelScreen = function() {
 	PS.border(PS.ALL, PS.ALL, 0);
     PB_GAME.UTIL.fillRegionBorder(
         [0, 0], [PB_GAME.CONSTANTS.GRID_SIZE, PB_GAME.CONSTANTS.GRID_SIZE],
-        PB_GAME.CONSTANTS.GRID_BORDER_SIZE, PB_GAME.CONSTANTS.GRID_BORDER_COLOR
+        PB_GAME.CONSTANTS.WALL_SIZE, PB_GAME.CONSTANTS.WALL_COLOR
     );
 }
 
@@ -37,6 +37,13 @@ PB_GAME.HANDLER.updateLevelState = function() {
     PB_GAME.UTIL.ACTOR.fillActor(levelState.player, PB_GAME.CONSTANTS.PLAYER_COLOR);
     PS.glyph(levelState.player.pivot[0], levelState.player.pivot[1], PB_GAME.CONSTANTS.PLAYER_PIVOT_GLYPH);
     PB_GAME.UTIL.ACTOR.fillActorBorder(levelState.goal, PB_GAME.CONSTANTS.GOAL_BORDER_SIZE, PB_GAME.CONSTANTS.PLAYER_COLOR);
+
+    // Draw walls
+    if (currentLevelState.walls != null) {
+        currentLevelState.walls.forEach(wall => {
+            PS.color(wall[0], wall[1], PB_GAME.CONSTANTS.WALL_COLOR);
+        });
+    }
     // PS.debug(levelState.player.shape.offsets);
     // PS.debug(PB_GAME.UTIL.ACTOR.getActorCells(levelState.player) + "\n");
 }
@@ -84,7 +91,7 @@ PB_GAME.HANDLER.tryRotatePlayer = function() {
     PB_GAME.HANDLER.tryWithLevelStateUpdate(levelState => {
         // Rotate, updating actor when valid
         let [newPlayer, blockingWalls] = PB_GAME.UTIL.ACTOR.getRotatedActor(
-            levelState.player, PB_GAME.CONSTANTS.PLAYER_ROTATE_ANGLE
+            levelState.player, PB_GAME.CONSTANTS.PLAYER_ROTATE_ANGLE, levelState.walls
         );
         levelState.player = newPlayer;
         
@@ -99,22 +106,19 @@ PB_GAME.HANDLER.loadVictoryScreen = function() {
     PB_GAME.HANDLER.clearLevelScreen();
     PS.statusText("");
 
-    PS.glyph(2, 4, 'T');
-    PS.glyph(3, 4, 'H');
-    PS.glyph(4, 4, 'E');
-    PS.glyph(7, 4, 'E');
-    PS.glyph(8, 4, 'N');
-    PS.glyph(9, 4, 'D');
+    PS.glyph(3, 5, 'T');
+    PS.glyph(4, 5, 'H');
+    PS.glyph(5, 5, 'E');
+    PS.glyph(8, 5, 'E');
+    PS.glyph(9, 5, 'N');
+    PS.glyph(10, 5, 'D');
 
-    // PS.glyph(1, 7, '[');
-    PS.glyph(2, 7, 'F');
-    PS.glyph(3, 7, 'O');
-    PS.glyph(4, 7, 'R');
-    PS.glyph(7, 7, 'N');
-    PS.glyph(8, 7, 'O');
-    PS.glyph(9, 7, 'W');
-    // PS.glyph(10, 7, ']');
-    
+    PS.glyph(3, 8, 'F');
+    PS.glyph(4, 8, 'O');
+    PS.glyph(5, 8, 'R');
+    PS.glyph(8, 8, 'N');
+    PS.glyph(9, 8, 'O');
+    PS.glyph(10, 8, 'W');
 }
 
 // Completes current level.
@@ -194,7 +198,8 @@ PB_GAME.HANDLER.loadLevel = function(levelIndex) {
         goal: {
             pivot: level.goal.pivot,
             shape: level.goal.shape
-        }
+        },
+        walls: level.walls
     }
     currentLevelIndex = levelIndex;
     currentLevelState = levelState;
@@ -213,5 +218,8 @@ PB_GAME.HANDLER.resetLevel = function() {
 
 // Starts game handling
 PB_GAME.HANDLER.start = function() {
-    PB_GAME.HANDLER.loadLevel(0);
+    PB_GAME.HANDLER.loadLevel(
+        PB_GAME.CONSTANTS.START_AT_LAST ? PB_GAME.LEVELS.length - 1 :
+        PB_GAME.CONSTANTS.STARTING_LEVEL
+    );
 }
