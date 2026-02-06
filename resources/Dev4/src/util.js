@@ -99,6 +99,11 @@ PB_GAME.UTIL.addOffset = function(pivot, offset) {
     return [pivot[0] + offset[0], pivot[1] + offset[1]];
 }
 
+// Returns [x, y] getting the offset pivot2 - pivot1 between the two [x, y] pivots
+PB_GAME.UTIL.getOffset = function(pivot1, pivot2) {
+    return [pivot2[0] - pivot1[0], pivot2[1] - pivot1[1]];
+}
+
 // Returns the pivot rotated around (0, 0) by the angle (IN RADIANS) by applying a 2D rotation matrix
 PB_GAME.UTIL.rotatePivot = function(pivot, angle) {
     return [
@@ -228,10 +233,7 @@ PB_GAME.UTIL.getShapePivotValid = function(shape, pivot, walls) {
     return [isValid, blockingWalls];
 }
 
-// Returns whether the two shapes are overlapping at their respective pivots.
-PB_GAME.UTIL.doShapesOverlap = function(pivot1, shape1, pivot2, shape2) {
-    const shape1Cells = PB_GAME.UTIL.getShapeCells(pivot1, shape1);
-    const shape2Cells = PB_GAME.UTIL.getShapeCells(pivot2, shape2);
+PB_GAME.UTIL.doShapeCellsOverlap = function(shape1Cells, shape2Cells) {
     if (shape1Cells.length != shape2Cells.length) {
         // One of the shapes has more cells
         return false;
@@ -254,7 +256,62 @@ PB_GAME.UTIL.doShapesOverlap = function(pivot1, shape1, pivot2, shape2) {
     return true;
 }
 
-// Actor util
+// Returns whether the two shapes are overlapping at their respective pivots.
+PB_GAME.UTIL.doShapesOverlap = function(pivot1, shape1, pivot2, shape2) {
+    const shape1Cells = PB_GAME.UTIL.getShapeCells(pivot1, shape1);
+    const shape2Cells = PB_GAME.UTIL.getShapeCells(pivot2, shape2);
+    return PB_GAME.UTIL.doShapeCellsOverlap(shape1Cells, shape2Cells);
+    PS.debug(`OVERLAP CHECK: ${shape1Cells};;; ${shape2Cells};;\n`);
+}
+
+PB_GAME.UTIL.getCellsMinMax = function(cells) {
+    let minX = Infinity;
+    let minY = Infinity;
+    let maxX = -Infinity;
+    let maxY = -Infinity;
+    cells.forEach(cell => {
+        const [x, y] = cell;
+        if (x < minX) {
+            minX = x;
+        }
+        if (x > maxX) {
+            maxX = x;
+        }
+        if (y < minY) {
+            minY = y;
+        }
+        if (y > maxY) {
+            maxY = y;
+        }
+    });
+    return [[minX, minY], [maxX, maxY]];
+}
+
+// Returns whether the two shapes are overlapping, if they were both aligned and crammed into the same top left corner.
+PB_GAME.UTIL.doShapesOverlapWhenAligned = function(shape1, shape2) {
+    const pivot = [0, 0];
+    let shape1Cells = PB_GAME.UTIL.getShapeCells(pivot, shape1);
+    let shape2Cells = PB_GAME.UTIL.getShapeCells(pivot, shape2);
+    let [shape1Min] = PB_GAME.UTIL.getCellsMinMax(shape1Cells);
+    shape1Cells = shape1Cells.map(cell => {
+        return PB_GAME.UTIL.addOffset(cell, [-shape1Min[0], -shape1Min[1]])
+    });
+    let [shape2Min] = PB_GAME.UTIL.getCellsMinMax(shape2Cells);
+    shape2Cells = shape2Cells.map(cell => {
+        return PB_GAME.UTIL.addOffset(cell, [-shape2Min[0], -shape2Min[1]])
+    });
+    return PB_GAME.UTIL.doShapeCellsOverlap(shape1Cells, shape2Cells);
+}
+
+// Returns whether the first shape can ever overlap the second.
+PB_GAME.UTIL.canShapesOverlap = function(shape1, shape2) {
+    return PB_GAME.UTIL.doShapesOverlapWhenAligned(shape1, shape2) ||
+        PB_GAME.UTIL.doShapesOverlapWhenAligned(PB_GAME.UTIL.getRotatedShape(shape1, Math.PI / 2), shape2) ||
+        PB_GAME.UTIL.doShapesOverlapWhenAligned(PB_GAME.UTIL.getRotatedShape(shape1, Math.PI), shape2) ||
+        PB_GAME.UTIL.doShapesOverlapWhenAligned(PB_GAME.UTIL.getRotatedShape(shape1, -Math.PI / 2), shape2);
+}
+
+// Actor
 
 PB_GAME.UTIL.ACTOR = {};
 
@@ -285,8 +342,9 @@ PB_GAME.UTIL.ACTOR.getActorPivotValid = function(actor, walls) {
     return PB_GAME.UTIL.getShapePivotValid(actor.shape, actor.pivot, walls);
 }
 
-// Returns [rotatedActor, collisionCells], where:
+// Returns [rotatedActor, isValid, collisionCells], where:
 // - rotatedActor: the actor rotated about the pivot by angle (IN RADIANS) avoiding walls [[x, y]]
+// - isValid: true if the actor could rotate, else false
 // - blockingWalls: [[x, y]] for all wall cells the actor would collide with if it rotated.
 // If rotating to out of bounds, will be null
 PB_GAME.UTIL.ACTOR.getRotatedActor = function(actor, angle, walls) {
@@ -304,7 +362,7 @@ PB_GAME.UTIL.ACTOR.getRotatedActor = function(actor, angle, walls) {
         // Rotation position invalid, leave actor as it was
         newActor = actor;
     }
-    return [newActor, blockingWalls];
+    return [newActor, isValid, blockingWalls];
 }
 
 // Returns whether the two actors are overlapping.

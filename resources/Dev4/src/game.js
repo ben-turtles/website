@@ -36,6 +36,9 @@ PS.keyDown = function(key, shift, ctrl, options) {
     else if (PB_GAME.CONSTANTS.MOVE_RIGHT_KEYS.some(k => k == key)) {
         PB_GAME.HANDLER.tryMovePlayer([1, 0]);
     }
+    else if (PB_GAME.CONSTANTS.CONNECT_KEYS.some(k => k == key)) {
+        PB_GAME.HANDLER.tryConnectPlayer();
+    }
     else if (PB_GAME.CONSTANTS.RESET_KEYS.some(k => k == key)) {
         PB_GAME.HANDLER.resetLevel();
     }
