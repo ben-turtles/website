@@ -6,13 +6,12 @@ PB_GAME.LEVELS = [];
 
 // Level 1
 PB_GAME.LEVELS.push({
-    name: "WASD - Move",
     player: {
         pivot: [3, 7],
         shape: PB_GAME.SHAPES.VERTICAL_RECTANGLE
     },
     goal: {
-        pivot: [9, 7],
+        pivot: [10, 7],
         shape: PB_GAME.SHAPES.VERTICAL_RECTANGLE
     },
 });
@@ -162,8 +161,56 @@ PB_GAME.LEVELS.push({
 
 // Level 9
 PB_GAME.LEVELS.push({
+    // name: "",
     player: {
         pivot: [10, 7],
+        shape: PB_GAME.SHAPES.VERTICAL_RECTANGLE
+    },
+    goal: {
+        pivot: [12, 9],
+        shape: {
+            offsets: [
+                [0, -2],
+                [0, -1],
+                [0, 1],
+                [0, 2],
+                [0, 3],
+            ]
+        }
+    },
+    walls: [
+        [7, 0],
+        [7, 1],
+        [7, 2],
+        [7, 3],
+        [7, 4],
+        [7, 5],
+        [7, 6],
+        [7, 8],
+        [7, 9],
+        [7, 10],
+        [7, 11],
+        [7, 12],
+        [7, 13],
+
+        [7, 4],
+        [8, 4],
+        [9, 4],
+        [11, 4],
+        [12, 4],
+        [13, 4],
+    ],
+    pickups: [
+        [2, 3],
+        [4, 11],
+        [12, 1],
+    ]
+});
+
+// Level 10
+PB_GAME.LEVELS.push({
+    player: {
+        pivot: [3, 5],
         shape: PB_GAME.SHAPES.VERTICAL_RECTANGLE
     },
     goal: {
@@ -171,9 +218,10 @@ PB_GAME.LEVELS.push({
         shape: {
             offsets: [
                 [-2, 0],
-                [-2, 1],
+                [-2, -1],
                 [-1, 0],
                 [1, 0],
+                [1, -1],
             ]
         }
     },
@@ -197,14 +245,30 @@ PB_GAME.LEVELS.push({
         [6, 11],
         [6, 12],
         [6, 13],
+
+        [7, 9],
+        [8, 9],
+        [9, 9],
+        [10, 9],
+        [12, 5],
+        [10, 10],
+        [10, 11],
+        [10, 12],
+        [10, 13],
+        [11, 13],
+        [12, 13],
+        [13, 13],
+        // [9, 8],
+        // [13, 9],
     ],
     pickups: [
         [11, 2],
-        [3, 11],
+        [2, 11],
+        [12, 8],
     ]
 });
 
-// Level 10
+// Level 11
 PB_GAME.LEVELS.push({
     player: {
         pivot: [11, 2],
