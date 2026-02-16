@@ -8,6 +8,7 @@
 "use strict";
 
 const PB_GAME = {};
+PB_GAME.lastDownMap = new Map();
 
 PS.init = function(system, options) {
     // Set grid basics
@@ -21,6 +22,15 @@ PS.init = function(system, options) {
 
 
 PS.keyDown = function(key, shift, ctrl, options) {
+    const time = options.time;
+    const lastTime = PB_GAME.lastDownMap.get(key);
+    if (lastTime != null && (time - lastTime) < PB_GAME.CONSTANTS.MIN_TIME_GAP) {
+        // This key was down too recently, skip input
+        return;
+    }
+    // Track time this key was down for key cooldowns
+    PB_GAME.lastDownMap.set(key, time);
+
     if (PB_GAME.CONSTANTS.ROTATE_KEYS.some(k => k == key)) {
         PB_GAME.HANDLER.toggleRotatePreview(true);
     }
@@ -46,6 +56,9 @@ PS.keyDown = function(key, shift, ctrl, options) {
 
 
 PS.keyUp = function( key, shift, ctrl, options ) {
+    // On release, remove key cooldown
+    PB_GAME.lastDownMap.delete(key);
+
     if (PB_GAME.CONSTANTS.ROTATE_KEYS.some(k => k == key)) {
         PB_GAME.HANDLER.toggleRotatePreview(false);
         PB_GAME.HANDLER.tryRotatePlayer();

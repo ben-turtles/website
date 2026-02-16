@@ -228,27 +228,21 @@ PB_GAME.UTIL.getRotatedShape = function(shape, angle) {
 
 // Returns [isValid, blockingCells], where:
 // - isValid: true if shape is in a valid position at the pivot, avoiding all walls and in bounds
-// - blockingCells: [[x, y]] for all cells shape overlaps with. If out of bounds, will be null
+// - blockingCells: [[x, y]] for all cells shape overlaps with. Cells can be out of bounds!
 PB_GAME.UTIL.getShapePivotValid = function(shape, pivot, walls) {
     const shapeCells = PB_GAME.UTIL.getShapeCells(pivot, shape);
+    let blockingCells = [];
 
     // Check out of bounds
-    let outOfBoundsCells = [];
     for (let i = 0; i < shapeCells.length; i++) {
         const shapeCell = shapeCells[i];
         if (PB_GAME.UTIL.isPivotOutOfBounds(shapeCell)) {
-            outOfBoundsCells.push(shapeCell);
+            blockingCells.push(shapeCell);
         }
-    }
-    if (outOfBoundsCells.length > 0) {
-        // Some cells out of bounds
-        PS.debug("OUT OF BOUNDS!!:" + outOfBoundsCells + "\n")
-        return [false, outOfBoundsCells];
     }
 
     // Check walls
-    let isValid = true;
-    let blockingCells = [];
+    let isValid = blockingCells.length == 0;
     if (walls != null) {
         for (let i = 0; i < shapeCells.length; i++) {
             const shapeCell = shapeCells[i];
@@ -265,6 +259,7 @@ PB_GAME.UTIL.getShapePivotValid = function(shape, pivot, walls) {
     return [isValid, blockingCells];
 }
 
+// Returns whether any of the cells within the two list of [[x, y]] are overlapping.
 PB_GAME.UTIL.doShapeCellsOverlap = function(shape1Cells, shape2Cells) {
     if (shape1Cells.length != shape2Cells.length) {
         // One of the shapes has more cells
@@ -293,9 +288,9 @@ PB_GAME.UTIL.doShapesOverlap = function(pivot1, shape1, pivot2, shape2) {
     const shape1Cells = PB_GAME.UTIL.getShapeCells(pivot1, shape1);
     const shape2Cells = PB_GAME.UTIL.getShapeCells(pivot2, shape2);
     return PB_GAME.UTIL.doShapeCellsOverlap(shape1Cells, shape2Cells);
-    PS.debug(`OVERLAP CHECK: ${shape1Cells};;; ${shape2Cells};;\n`);
 }
 
+// Returns [[minX, minY], [maxX, maxY]] describing the minimum cell and maximum cell of all of the cells
 PB_GAME.UTIL.getCellsMinMax = function(cells) {
     let minX = Infinity;
     let minY = Infinity;
@@ -369,7 +364,7 @@ PB_GAME.UTIL.ACTOR.getActorCells = function(actor) {
 
 // Returns [isValid, blockingCells], where:
 // - isValid: true if actor is in a valid position, avoiding all walls and in bounds
-// - blockingCells: [[x, y]] for all cells actor overlaps with. If out of bounds, will be null
+// - blockingCells: [[x, y]] for all cells actor overlaps with.  Cells can be out of bounds!
 PB_GAME.UTIL.ACTOR.getActorPivotValid = function(actor, walls) {
     return PB_GAME.UTIL.getShapePivotValid(actor.shape, actor.pivot, walls);
 }
@@ -377,8 +372,7 @@ PB_GAME.UTIL.ACTOR.getActorPivotValid = function(actor, walls) {
 // Returns [rotatedActor, isValid, collisionCells], where:
 // - rotatedActor: the actor rotated about the pivot by angle (IN RADIANS) avoiding walls [[x, y]]
 // - isValid: true if the actor could rotate, else false
-// - blockingCells: [[x, y]] for all wall cells the actor would collide with if it rotated.
-// If rotating to out of bounds, will be null
+// - blockingCells: [[x, y]] for all wall cells the actor would collide with if it rotated. Cells can be out of bounds!
 PB_GAME.UTIL.ACTOR.getRotatedActor = function(actor, angle, walls) {
     // Get rotated actor shape, and information about if valid
     let newShape = PB_GAME.UTIL.getRotatedShape(actor.shape, angle);

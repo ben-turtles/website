@@ -201,6 +201,22 @@ PB_GAME.LEVELS.push({
     ]
 });
 
+// Level 10
+PB_GAME.LEVELS.push({
+    player: {
+        pivot: [3, 5],
+        shape: PB_GAME.SHAPES.VERTICAL_RECTANGLE
+    },
+    goal: {
+        pivot: [8, 8],
+        shape: PB_GAME.SHAPES.HORIZONTAL_S_BLOCK
+    },
+    pickups: [
+        [9, 3],
+        [4, 10],
+    ]
+});
+
 // Level 11
 PB_GAME.LEVELS.push({
     // name: "",

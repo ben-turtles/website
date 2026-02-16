@@ -4,11 +4,9 @@
 
 PB_GAME.HANDLER = {};
 
-let currentLevelIndex = 0;
-let currentLevelState = null;
-let showRotatePreview = false;
-let displayingRotatePreview = false;
-let rotatePreviewTimer = null;
+PB_GAME.currentLevelIndex = 0;
+PB_GAME.currentLevelState = null;
+PB_GAME.showRotatePreview = false;
 
 // Player
 
@@ -27,14 +25,14 @@ PB_GAME.HANDLER.getPlayerBlockerCells = function(levelState) {
 // Runs the handler with level state, and then updates level state. Doesn't run if no level state.
 // If handler returns true, the level state won't be updated.
 PB_GAME.HANDLER.tryWithLevelStateUpdate = function(handler) {
-    if (currentLevelState == null) {
+    if (PB_GAME.currentLevelState == null) {
         return;
     }
-    const noUpdate = handler(currentLevelState);
+    const noUpdate = handler(PB_GAME.currentLevelState);
     if (!noUpdate) {
 
         // Move to next level if overlapping goal
-        if (PB_GAME.UTIL.ACTOR.doActorsOverlap(currentLevelState.player, currentLevelState.goal)) {
+        if (PB_GAME.UTIL.ACTOR.doActorsOverlap(PB_GAME.currentLevelState.player, PB_GAME.currentLevelState.goal)) {
             PB_GAME.HANDLER.completeLevel();
         }
         // Else, update state
@@ -47,6 +45,7 @@ PB_GAME.HANDLER.tryWithLevelStateUpdate = function(handler) {
 // Tries to move the player the offset. Can fail if wall is in the way
 PB_GAME.HANDLER.tryMovePlayer = function(offset) {
     PB_GAME.HANDLER.tryWithLevelStateUpdate(levelState => {
+
         // Get new pivot we'd be at
         let newPivot = PB_GAME.UTIL.ACTOR.getOffsetMove(levelState.player, offset);
 
@@ -67,23 +66,8 @@ PB_GAME.HANDLER.tryMovePlayer = function(offset) {
 
 // Toggles showing player where they would rotate where they currently are.
 PB_GAME.HANDLER.toggleRotatePreview = function(enabled) {
-    showRotatePreview = enabled
-    if (enabled && !displayingRotatePreview) {
-        PB_GAME.UTIL.delay(1/60, () => {
-            if (showRotatePreview) {
-                displayingRotatePreview = true;
-                PB_GAME.HANDLER.updateLevelState();
-                // rotatePreviewTimer = PB_GAME.UTIL.onStep(PB_GAME.HANDLER.updateLevelState)
-            }
-        })
-    }
-    else if (!enabled) {
-        displayingRotatePreview = false;
-        if (rotatePreviewTimer != null) {
-            PS.timerStop(rotatePreviewTimer)
-            rotatePreviewTimer = null;
-        }
-    }
+    PB_GAME.showRotatePreview = enabled
+    PB_GAME.HANDLER.updateLevelState();
 }
 
 // Tries to rotate the player. Can fail if wall is in the way
@@ -142,15 +126,15 @@ PB_GAME.HANDLER.tryConnectPlayer = function() {
 
 // Flashes player a certain color temporarily. If rate supplied, divides how much time should take by default
 PB_GAME.HANDLER.flashPlayer = function(flashColor, rate) {
-    if (currentLevelState == null) {
+    if (PB_GAME.currentLevelState == null) {
         return;
     }
-    let player = currentLevelState.player;
+    let player = PB_GAME.currentLevelState.player;
     const useRate = rate != null ? rate : 1;
     const colorMethod = (startColor, finalColor, alpha) => {
         const color = PB_GAME.UTIL.lerpColor(startColor, finalColor, alpha);
-        if (currentLevelState != null) {
-            player = currentLevelState.player;
+        if (PB_GAME.currentLevelState != null) {
+            player = PB_GAME.currentLevelState.player;
         }
         if (player != null) {
 
@@ -212,7 +196,7 @@ PB_GAME.HANDLER.getLevelStateImpossible = function(levelState) {
 
 // Updates and draws current level state
 PB_GAME.HANDLER.updateLevelState = function() {
-    const levelState = currentLevelState;
+    const levelState = PB_GAME.currentLevelState;
     if (levelState == null) {
         return;
     }
@@ -227,27 +211,27 @@ PB_GAME.HANDLER.updateLevelState = function() {
     }
     else {
         // Set name of level
-        const name = currentLevelState.name;
-        PS.statusText(`Level ${currentLevelIndex + 1}${name != null ? " | " + name : ""}`);
+        const name = PB_GAME.currentLevelState.name;
+        PS.statusText(`Level ${PB_GAME.currentLevelIndex + 1}${name != null ? " | " + name : ""}`);
     }
+    const playerColor = PB_GAME.CONSTANTS.PLAYER_COLOR;
 
     // Draw walls
-    if (currentLevelState.walls != null) {
-        currentLevelState.walls.forEach(wall => {
+    if (PB_GAME.currentLevelState.walls != null) {
+        PB_GAME.currentLevelState.walls.forEach(wall => {
             PS.color(wall[0], wall[1], PB_GAME.CONSTANTS.WALL_COLOR);
         });
     }
 
     // Draw pickups
-    if (currentLevelState.pickups != null) {
-        currentLevelState.pickups.forEach(pickup => {
+    if (PB_GAME.currentLevelState.pickups != null) {
+        PB_GAME.currentLevelState.pickups.forEach(pickup => {
             PS.color(pickup[0], pickup[1], playerColor);
         });
     }
     
     // Draw player + goal
-    const playerColor = PB_GAME.CONSTANTS.PLAYER_COLOR;
-    if (displayingRotatePreview) {
+    if (PB_GAME.showRotatePreview) {
         // Draw player preview
         let [rotatedPlayer, isValid, blockingCells] = PB_GAME.UTIL.ACTOR.getRotatedActor(
             levelState.player, PB_GAME.CONSTANTS.PLAYER_ROTATE_ANGLE,
@@ -280,7 +264,7 @@ PB_GAME.HANDLER.updateLevelState = function() {
 
 // Loads victory screen
 PB_GAME.HANDLER.loadVictoryScreen = function() {
-    currentLevelState = null;
+    PB_GAME.currentLevelState = null;
     PS.audioPlay("fx_tada");
 
     // Clear level
@@ -304,7 +288,7 @@ PB_GAME.HANDLER.loadVictoryScreen = function() {
 
 // Completes current level.
 PB_GAME.HANDLER.completeLevel = function() {
-    if (currentLevelState == null) {
+    if (PB_GAME.currentLevelState == null) {
         return;
     }
     PS.audioPlay("fx_powerup8");
@@ -315,14 +299,14 @@ PB_GAME.HANDLER.completeLevel = function() {
 
     // Move to next level after delay
     PB_GAME.UTIL.delay(PB_GAME.CONSTANTS.NEXT_LEVEL_LOAD_DELAY, () => {
-        currentLevelIndex++;
-        if (currentLevelIndex >= PB_GAME.LEVELS.length) {
+        PB_GAME.currentLevelIndex++;
+        if (PB_GAME.currentLevelIndex >= PB_GAME.LEVELS.length) {
             // Beat last level, victory!
             PB_GAME.HANDLER.loadVictoryScreen();
         }
         else {
             // Load next level
-            PB_GAME.HANDLER.loadLevel(currentLevelIndex);
+            PB_GAME.HANDLER.loadLevel(PB_GAME.currentLevelIndex);
         }
     })
 
@@ -330,7 +314,7 @@ PB_GAME.HANDLER.completeLevel = function() {
     PB_GAME.HANDLER.flashPlayer(PB_GAME.CONSTANTS.PLAYER_GOAL_SHINE_COLOR);
 
     // Clear level state to disable inputs
-    currentLevelState = null;
+    PB_GAME.currentLevelState = null;
 }
 
 // Loads level of the index. Returns if loaded
@@ -362,8 +346,8 @@ PB_GAME.HANDLER.loadLevel = function(levelIndex) {
         walls: level.walls,
         pickups: level.pickups,
     }
-    currentLevelIndex = levelIndex;
-    currentLevelState = levelState;
+    PB_GAME.currentLevelIndex = levelIndex;
+    PB_GAME.currentLevelState = levelState;
 
     // Draw level state
     PB_GAME.HANDLER.updateLevelState();
@@ -373,8 +357,8 @@ PB_GAME.HANDLER.loadLevel = function(levelIndex) {
 
 // Resets current level to original state
 PB_GAME.HANDLER.resetLevel = function() {
-    if (currentLevelState != null) {
-        PB_GAME.HANDLER.loadLevel(currentLevelIndex);
+    if (PB_GAME.currentLevelState != null) {
+        PB_GAME.HANDLER.loadLevel(PB_GAME.currentLevelIndex);
     }
 }
 
