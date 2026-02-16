@@ -87,6 +87,48 @@ PB_GAME.LEVELS.push({
 PB_GAME.LEVELS.push({
     // name: "",
     player: {
+        pivot: [1, 8],
+        shape: PB_GAME.SHAPES.VERTICAL_RECTANGLE
+    },
+    goal: {
+        pivot: [12, 10],
+        shape: PB_GAME.SHAPES.VERTICAL_RECTANGLE
+    },
+    walls: [
+        [4, 0],
+        [4, 1],
+        [4, 2],
+        [4, 3],
+        [4, 5],
+        [4, 6],
+        [4, 7],
+        [4, 8],
+        [4, 9],
+        [4, 10],
+        [4, 11],
+        [4, 12],
+        [4, 13],
+
+        [9, 0],
+        [9, 1],
+        [9, 2],
+        [9, 3],
+        [9, 4],
+        [9, 5],
+        [9, 6],
+        [9, 7],
+        [9, 8],
+        [9, 10],
+        [9, 11],
+        [9, 12],
+        [9, 13],
+    ]
+});
+
+// Level 7
+PB_GAME.LEVELS.push({
+    // name: "",
+    player: {
         pivot: [1, 7],
         shape: PB_GAME.SHAPES.VERTICAL_RECTANGLE
     },
@@ -127,7 +169,7 @@ PB_GAME.LEVELS.push({
     ]
 });
 
-// Level 7
+// Level 8
 PB_GAME.LEVELS.push({
     name: "Space - Connect",
     player: {
@@ -143,7 +185,7 @@ PB_GAME.LEVELS.push({
     ]
 });
 
-// Level 8
+// Level 9
 PB_GAME.LEVELS.push({
     player: {
         pivot: [3, 5],
@@ -159,7 +201,7 @@ PB_GAME.LEVELS.push({
     ]
 });
 
-// Level 9
+// Level 11
 PB_GAME.LEVELS.push({
     // name: "",
     player: {
@@ -207,7 +249,7 @@ PB_GAME.LEVELS.push({
     ]
 });
 
-// Level 10
+// Level 12
 PB_GAME.LEVELS.push({
     player: {
         pivot: [3, 5],
@@ -268,7 +310,7 @@ PB_GAME.LEVELS.push({
     ]
 });
 
-// Level 11
+// Level 13
 PB_GAME.LEVELS.push({
     player: {
         pivot: [11, 2],

@@ -6,7 +6,9 @@ PB_GAME.HANDLER = {};
 
 let currentLevelIndex = 0;
 let currentLevelState = null;
-
+let showRotatePreview = false;
+let displayingRotatePreview = false;
+let rotatePreviewTimer = null;
 
 // Player
 
@@ -63,15 +65,38 @@ PB_GAME.HANDLER.tryMovePlayer = function(offset) {
     });
 }
 
+// Toggles showing player where they would rotate where they currently are.
+PB_GAME.HANDLER.toggleRotatePreview = function(enabled) {
+    showRotatePreview = enabled
+    if (enabled && !displayingRotatePreview) {
+        PB_GAME.UTIL.delay(1/60, () => {
+            if (showRotatePreview) {
+                displayingRotatePreview = true;
+                PB_GAME.HANDLER.updateLevelState();
+                // rotatePreviewTimer = PB_GAME.UTIL.onStep(PB_GAME.HANDLER.updateLevelState)
+            }
+        })
+    }
+    else if (!enabled) {
+        displayingRotatePreview = false;
+        if (rotatePreviewTimer != null) {
+            PS.timerStop(rotatePreviewTimer)
+            rotatePreviewTimer = null;
+        }
+    }
+}
+
 // Tries to rotate the player. Can fail if wall is in the way
 PB_GAME.HANDLER.tryRotatePlayer = function() {
     PB_GAME.HANDLER.tryWithLevelStateUpdate(levelState => {
         // Rotate, updating actor when valid
-        let [newPlayer, isValid, blockingWalls] = PB_GAME.UTIL.ACTOR.getRotatedActor(
+        let [rotatedPlayer, isValid] = PB_GAME.UTIL.ACTOR.getRotatedActor(
             levelState.player, PB_GAME.CONSTANTS.PLAYER_ROTATE_ANGLE,
             PB_GAME.HANDLER.getPlayerBlockerCells(levelState)
         );
-        levelState.player = newPlayer;
+        if (isValid) {
+            levelState.player = rotatedPlayer;
+        }
         if (isValid) {
             PS.audioPlay("fx_rip");
         }
@@ -115,20 +140,6 @@ PB_GAME.HANDLER.tryConnectPlayer = function() {
     });
 }
 
-// Clears level screen, erasing all actors and borders
-PB_GAME.HANDLER.clearLevelScreen = function() {
-    // Clear level
-    PS.color(PS.ALL, PS.ALL, PB_GAME.CONSTANTS.LEVEL_BG_COLOR);
-    PS.glyph(PS.ALL, PS.ALL, 0);
-    
-    // Refresh grid border
-	PS.border(PS.ALL, PS.ALL, 0);
-    PB_GAME.UTIL.fillRegionBorder(
-        [0, 0], [PB_GAME.CONSTANTS.GRID_SIZE, PB_GAME.CONSTANTS.GRID_SIZE],
-        PB_GAME.CONSTANTS.WALL_SIZE, PB_GAME.CONSTANTS.WALL_COLOR
-    );
-}
-
 // Flashes player a certain color temporarily. If rate supplied, divides how much time should take by default
 PB_GAME.HANDLER.flashPlayer = function(flashColor, rate) {
     if (currentLevelState == null) {
@@ -169,6 +180,20 @@ PB_GAME.HANDLER.flashPlayer = function(flashColor, rate) {
 
 // Levels
 
+// Clears level screen, erasing all actors and borders
+PB_GAME.HANDLER.clearLevelScreen = function() {
+    // Clear level
+    PS.color(PS.ALL, PS.ALL, PB_GAME.CONSTANTS.LEVEL_BG_COLOR);
+    PS.glyph(PS.ALL, PS.ALL, 0);
+    
+    // Refresh grid border
+	PS.border(PS.ALL, PS.ALL, 0);
+    PB_GAME.UTIL.fillRegionBorder(
+        [0, 0], [PB_GAME.CONSTANTS.GRID_SIZE, PB_GAME.CONSTANTS.GRID_SIZE],
+        PB_GAME.CONSTANTS.WALL_SIZE, PB_GAME.CONSTANTS.WALL_COLOR
+    );
+}
+
 // Returns true if the level cannot be won in its current position
 PB_GAME.HANDLER.getLevelStateImpossible = function(levelState) {
     if (levelState.pickups == null || levelState.pickups.length > 0) {
@@ -205,12 +230,6 @@ PB_GAME.HANDLER.updateLevelState = function() {
         const name = currentLevelState.name;
         PS.statusText(`Level ${currentLevelIndex + 1}${name != null ? " | " + name : ""}`);
     }
-    
-    // Draw player + goal
-    const playerColor = PB_GAME.CONSTANTS.PLAYER_COLOR;
-    PB_GAME.UTIL.ACTOR.fillActor(levelState.player, playerColor);
-    PS.glyph(levelState.player.pivot[0], levelState.player.pivot[1], PB_GAME.CONSTANTS.PLAYER_PIVOT_GLYPH);
-    PB_GAME.UTIL.ACTOR.fillActorBorder(levelState.goal, PB_GAME.CONSTANTS.GOAL_BORDER_SIZE, playerColor);
 
     // Draw walls
     if (currentLevelState.walls != null) {
@@ -225,6 +244,36 @@ PB_GAME.HANDLER.updateLevelState = function() {
             PS.color(pickup[0], pickup[1], playerColor);
         });
     }
+    
+    // Draw player + goal
+    const playerColor = PB_GAME.CONSTANTS.PLAYER_COLOR;
+    if (displayingRotatePreview) {
+        // Draw player preview
+        let [rotatedPlayer, isValid, blockingCells] = PB_GAME.UTIL.ACTOR.getRotatedActor(
+            levelState.player, PB_GAME.CONSTANTS.PLAYER_ROTATE_ANGLE,
+            PB_GAME.HANDLER.getPlayerBlockerCells(levelState)
+        );
+        const playerPreviewColor =
+            isValid ? PB_GAME.CONSTANTS.PLAYER_PREVIEW_COLOR : PB_GAME.CONSTANTS.PLAYER_PREVIEW_INVALID_COLOR;
+        PB_GAME.UTIL.ACTOR.fillActor(rotatedPlayer, playerPreviewColor);
+        if (blockingCells.length > 0) {
+            const wallInvalidColor = PB_GAME.CONSTANTS.WALL_INVALID_COLOR;
+            blockingCells.forEach(cell => {
+                const inBoundsCell = PB_GAME.UTIL.getInBoundsFromPivot(cell);
+                if (inBoundsCell != null) {
+                    // Out of bounds, make border color error indication
+                    PS.borderColor(inBoundsCell[0], inBoundsCell[1], wallInvalidColor);
+                }
+                else {
+                    // In bounds, make wall color error indication
+                    PS.color(cell[0], cell[1], wallInvalidColor)
+                }
+            })
+        }
+    }
+    PB_GAME.UTIL.ACTOR.fillActor(levelState.player, playerColor);
+    PS.glyph(levelState.player.pivot[0], levelState.player.pivot[1], PB_GAME.CONSTANTS.PLAYER_PIVOT_GLYPH);
+    PB_GAME.UTIL.ACTOR.fillActorBorder(levelState.goal, PB_GAME.CONSTANTS.GOAL_BORDER_SIZE, playerColor);
     // PS.debug(levelState.player.shape.offsets);
     // PS.debug(PB_GAME.UTIL.ACTOR.getActorCells(levelState.player) + "\n");
 }
@@ -261,6 +310,7 @@ PB_GAME.HANDLER.completeLevel = function() {
     PS.audioPlay("fx_powerup8");
 
     // Update final level state
+    PB_GAME.HANDLER.toggleRotatePreview(false);
     PB_GAME.HANDLER.updateLevelState();
 
     // Move to next level after delay
