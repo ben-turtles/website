@@ -50,7 +50,7 @@ PS.keyDown = function(key, shift, ctrl, options) {
         PB_GAME.HANDLER.tryConnectPlayer();
     }
     else if (PB_GAME.CONSTANTS.RESET_KEYS.some(k => k == key)) {
-        PB_GAME.HANDLER.resetLevel();
+        PB_GAME.HANDLER.tryResetLevel();
     }
 };
 
@@ -63,7 +63,6 @@ PS.keyUp = function( key, shift, ctrl, options ) {
         PB_GAME.HANDLER.toggleRotatePreview(false);
         PB_GAME.HANDLER.tryRotatePlayer();
     }
-    
 };
 
 

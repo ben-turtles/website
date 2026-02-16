@@ -25,14 +25,21 @@ PB_GAME.HANDLER.getPlayerBlockerCells = function(levelState) {
 // Runs the handler with level state, and then updates level state. Doesn't run if no level state.
 // If handler returns true, the level state won't be updated.
 PB_GAME.HANDLER.tryWithLevelStateUpdate = function(handler) {
-    if (PB_GAME.currentLevelState == null) {
+    const levelState = PB_GAME.currentLevelState;
+    if (levelState == null) {
         return;
     }
-    const noUpdate = handler(PB_GAME.currentLevelState);
+    const response = handler(levelState);
+    const noUpdate = response != null && response[0] 
     if (!noUpdate) {
+        var doComplete = response != null && response[1];
+        if (!doComplete) {
+            // Completion if overlapping goal
+            doComplete = PB_GAME.HANDLER.isPlayerOverlappingGoal(levelState);
+        }
 
-        // Move to next level if overlapping goal
-        if (PB_GAME.UTIL.ACTOR.doActorsOverlap(PB_GAME.currentLevelState.player, PB_GAME.currentLevelState.goal)) {
+        // Complete level
+        if (doComplete) {
             PB_GAME.HANDLER.completeLevel();
         }
         // Else, update state
@@ -56,7 +63,7 @@ PB_GAME.HANDLER.tryMovePlayer = function(offset) {
         );
         if (!isValid) {
             // Invalid move!
-            return true;
+            return [true];
         }
 
         // Move player, valid movement
@@ -82,7 +89,12 @@ PB_GAME.HANDLER.tryRotatePlayer = function() {
             levelState.player = rotatedPlayer;
         }
         if (isValid) {
-            PS.audioPlay("fx_rip");
+            const forceComplete = PB_GAME.HANDLER.isPlayerOverlappingGoal(levelState);
+            if (!forceComplete) {
+                // If already completed, don't play sfx to not overlap them
+                PS.audioPlay("fx_rip");
+            }
+            return [false, forceComplete]
         }
         else {
             PS.audioPlay("fx_bloop");
@@ -95,7 +107,7 @@ PB_GAME.HANDLER.tryConnectPlayer = function() {
     PB_GAME.HANDLER.tryWithLevelStateUpdate(levelState => {
         if (levelState.pickups == null) {
             // None to pickup
-            return true;
+            return [true];
         }
         let adjacentPickups = [];
         let newPickups = [];
@@ -112,7 +124,7 @@ PB_GAME.HANDLER.tryConnectPlayer = function() {
         });
         if (adjacentPickups.length == 0) {
             // No pickups
-            return true;
+            return [true];
         }
         levelState.pickups = newPickups;
         adjacentPickups.forEach(pickup => {
@@ -164,6 +176,11 @@ PB_GAME.HANDLER.flashPlayer = function(flashColor, rate) {
 
 // Levels
 
+// Gets if the player is currently overlapping the level state's goal
+PB_GAME.HANDLER.isPlayerOverlappingGoal = function(levelState) {
+    return PB_GAME.UTIL.ACTOR.doActorsOverlap(levelState.player, levelState.goal)
+}
+
 // Clears level screen, erasing all actors and borders
 PB_GAME.HANDLER.clearLevelScreen = function() {
     // Clear level
@@ -205,16 +222,19 @@ PB_GAME.HANDLER.updateLevelState = function() {
     PB_GAME.HANDLER.clearLevelScreen();
 
     // Change status
-    if (PB_GAME.HANDLER.getLevelStateImpossible(levelState)) {
-        // Level state impossible, display restart hot key
-        PS.statusText(PB_GAME.CONSTANTS.LEVEL_RESTART_STATUS_TEXT);
+    var controls = levelState.controls ?? "";
+    if (levelState.showRestartControls || PB_GAME.HANDLER.getLevelStateImpossible(levelState)) {
+        // Showing restart or level is impossible, display restart controls
+        if (controls.length > 0) {
+            controls += ", ";
+        }
+        controls += PB_GAME.CONSTANTS.LEVEL_RESTART_CONTROL
     }
-    else {
-        // Set name of level
-        const name = PB_GAME.currentLevelState.name;
-        PS.statusText(`Level ${PB_GAME.currentLevelIndex + 1}${name != null ? " | " + name : ""}`);
+    if (controls.length > 0) {
+        controls = " | " + controls;
     }
-    const playerColor = PB_GAME.CONSTANTS.PLAYER_COLOR;
+    const name = PB_GAME.currentLevelState.name;
+    PS.statusText(`Level ${PB_GAME.currentLevelIndex + 1}${name != null ? " - " + name : ""}${controls}`);
 
     // Draw walls
     if (PB_GAME.currentLevelState.walls != null) {
@@ -224,6 +244,7 @@ PB_GAME.HANDLER.updateLevelState = function() {
     }
 
     // Draw pickups
+    const playerColor = PB_GAME.CONSTANTS.PLAYER_COLOR;
     if (PB_GAME.currentLevelState.pickups != null) {
         PB_GAME.currentLevelState.pickups.forEach(pickup => {
             PS.color(pickup[0], pickup[1], playerColor);
@@ -345,6 +366,8 @@ PB_GAME.HANDLER.loadLevel = function(levelIndex) {
         },
         walls: level.walls,
         pickups: level.pickups,
+        controls: level.controls,
+        showRestartControls: level.showRestartControls,
     }
     PB_GAME.currentLevelIndex = levelIndex;
     PB_GAME.currentLevelState = levelState;
@@ -356,8 +379,8 @@ PB_GAME.HANDLER.loadLevel = function(levelIndex) {
 }
 
 // Resets current level to original state
-PB_GAME.HANDLER.resetLevel = function() {
-    if (PB_GAME.currentLevelState != null) {
+PB_GAME.HANDLER.tryResetLevel = function() {
+    if (PB_GAME.currentLevelState != null && !PB_GAME.currentLevelState.noReset) {
         PB_GAME.HANDLER.loadLevel(PB_GAME.currentLevelIndex);
     }
 }
