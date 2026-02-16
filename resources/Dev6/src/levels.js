@@ -18,7 +18,7 @@ PB_GAME.LEVELS.push({
 
 // Level 2
 PB_GAME.LEVELS.push({
-    name: "R - Rotate",
+    controls: "R - Rotate",
     player: {
         pivot: [3, 7],
         shape: PB_GAME.SHAPES.VERTICAL_RECTANGLE
@@ -87,6 +87,48 @@ PB_GAME.LEVELS.push({
 PB_GAME.LEVELS.push({
     // name: "",
     player: {
+        pivot: [1, 8],
+        shape: PB_GAME.SHAPES.VERTICAL_RECTANGLE
+    },
+    goal: {
+        pivot: [12, 6],
+        shape: PB_GAME.SHAPES.VERTICAL_RECTANGLE
+    },
+    walls: [
+        [4, 0],
+        [4, 1],
+        [4, 2],
+        [4, 3],
+        [4, 5],
+        [4, 6],
+        [4, 7],
+        [4, 8],
+        [4, 9],
+        [4, 10],
+        [4, 11],
+        [4, 12],
+        [4, 13],
+
+        [9, 0],
+        [9, 1],
+        [9, 2],
+        [9, 3],
+        [9, 4],
+        [9, 5],
+        [9, 6],
+        [9, 7],
+        [9, 8],
+        [9, 10],
+        [9, 11],
+        [9, 12],
+        [9, 13],
+    ]
+});
+
+// Level 7
+PB_GAME.LEVELS.push({
+    // name: "",
+    player: {
         pivot: [1, 7],
         shape: PB_GAME.SHAPES.VERTICAL_RECTANGLE
     },
@@ -127,9 +169,9 @@ PB_GAME.LEVELS.push({
     ]
 });
 
-// Level 7
+// Level 8
 PB_GAME.LEVELS.push({
-    name: "Space - Connect",
+    controls: "Space - Connect",
     player: {
         pivot: [3, 5],
         shape: PB_GAME.SHAPES.VERTICAL_RECTANGLE
@@ -143,8 +185,9 @@ PB_GAME.LEVELS.push({
     ]
 });
 
-// Level 8
+// Level 9
 PB_GAME.LEVELS.push({
+    showRestartControls: true,
     player: {
         pivot: [3, 5],
         shape: PB_GAME.SHAPES.VERTICAL_RECTANGLE
@@ -159,9 +202,68 @@ PB_GAME.LEVELS.push({
     ]
 });
 
-// Level 9
+// Level 10
+PB_GAME.LEVELS.push({
+    showRestartControls: true,
+    player: {
+        pivot: [8, 8],
+        shape: PB_GAME.SHAPES.VERTICAL_RECTANGLE
+    },
+    goal: {
+        pivot: [5, 5],
+        shape: {
+            offsets: [
+                [0, 1],
+                [0, 2],
+                [0, 3],
+                [1, 0],
+                [2, 0],
+                [3, 0],
+            ]
+        }
+    },
+    pickups: [
+        [13, 13],
+        [0, 13],
+        [13, 0],
+        [0, 0],
+    ]
+});
+
+// Level 11
+PB_GAME.LEVELS.push({
+    showRestartControls: true,
+    player: {
+        pivot: [5, 5],
+        shape: PB_GAME.SHAPES.VERTICAL_RECTANGLE
+    },
+    goal: {
+        pivot: [8, 8],
+        shape: {
+            offsets: [
+                [0, 1],
+                [0, 2],
+                [1, 0],
+                [2, 0],
+                [1, 2],
+                [2, 1],
+                [2, 2],
+            ]
+        }
+    },
+    pickups: [
+        [12, 5],
+        [5, 1],
+        [1, 5],
+        [5, 12],
+        [13, 13],
+    ]
+});
+
+// Level 12
 PB_GAME.LEVELS.push({
     // name: "",
+    showRestartControls: true,
     player: {
         pivot: [10, 7],
         shape: PB_GAME.SHAPES.VERTICAL_RECTANGLE
@@ -207,8 +309,54 @@ PB_GAME.LEVELS.push({
     ]
 });
 
-// Level 10
+// Level 13
 PB_GAME.LEVELS.push({
+    showRestartControls: true,
+    player: {
+        pivot: [9, 7],
+        shape: PB_GAME.SHAPES.HORIZONTAL_RECTANGLE
+    },
+    goal: {
+        pivot: [5, 11],
+        shape: {
+            offsets: [
+                [-3, -1],
+                [-3, 0],
+                [-2, 0],
+                [-1, 0],
+                [1, 0],
+                [2, 0],
+            ]
+        }
+    },
+    walls: [
+        [5, 0],
+        [5, 1],
+        [5, 2],
+        [5, 3],
+        [5, 4],
+
+        [6, 0],
+        [7, 0],
+        [8, 0],
+        [8, 1],
+        [8, 2],
+
+        [7, 2],
+        [7, 3],
+        [7, 4],
+    ],
+    pickups: [
+        [11, 3],
+        [5, 8],
+        [2, 2],
+        [7, 1],
+    ]
+});
+
+// Level 14
+PB_GAME.LEVELS.push({
+    showRestartControls: true,
     player: {
         pivot: [3, 5],
         shape: PB_GAME.SHAPES.VERTICAL_RECTANGLE
@@ -268,8 +416,9 @@ PB_GAME.LEVELS.push({
     ]
 });
 
-// Level 11
+// Level 15
 PB_GAME.LEVELS.push({
+    showRestartControls: true,
     player: {
         pivot: [11, 2],
         shape: PB_GAME.SHAPES.VERTICAL_RECTANGLE

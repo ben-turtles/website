@@ -8,6 +8,7 @@
 "use strict";
 
 const PB_GAME = {};
+PB_GAME.lastDownMap = new Map();
 
 PS.init = function(system, options) {
     // Set grid basics
@@ -21,8 +22,17 @@ PS.init = function(system, options) {
 
 
 PS.keyDown = function(key, shift, ctrl, options) {
+    const time = options.time;
+    const lastTime = PB_GAME.lastDownMap.get(key);
+    if (lastTime != null && (time - lastTime) < PB_GAME.CONSTANTS.MIN_TIME_GAP) {
+        // This key was down too recently, skip input
+        return;
+    }
+    // Track time this key was down for key cooldowns
+    PB_GAME.lastDownMap.set(key, time);
+
     if (PB_GAME.CONSTANTS.ROTATE_KEYS.some(k => k == key)) {
-        PB_GAME.HANDLER.tryRotatePlayer();
+        PB_GAME.HANDLER.toggleRotatePreview(true);
     }
     else if (PB_GAME.CONSTANTS.MOVE_UP_KEYS.some(k => k == key)) {
         PB_GAME.HANDLER.tryMovePlayer([0, -1]);
@@ -40,13 +50,19 @@ PS.keyDown = function(key, shift, ctrl, options) {
         PB_GAME.HANDLER.tryConnectPlayer();
     }
     else if (PB_GAME.CONSTANTS.RESET_KEYS.some(k => k == key)) {
-        PB_GAME.HANDLER.resetLevel();
+        PB_GAME.HANDLER.tryResetLevel();
     }
 };
 
 
 PS.keyUp = function( key, shift, ctrl, options ) {
-    
+    // On release, remove key cooldown
+    PB_GAME.lastDownMap.delete(key);
+
+    if (PB_GAME.CONSTANTS.ROTATE_KEYS.some(k => k == key)) {
+        PB_GAME.HANDLER.toggleRotatePreview(false);
+        PB_GAME.HANDLER.tryRotatePlayer();
+    }
 };
 
 
@@ -91,26 +107,3 @@ PS.exitGrid = function( options ) {
 
 // 	// Add code here for when the mouse button/touch is released over a bead.
 // };
-
-
-var GAME = {
-	// Constants
-
-
-	// Variables
-
-	// Functions
-
-	// FIREWORK.getBackgroundColor()
-    // Gets default color at the cell
-    // getBackgroundColor : function ( x, y ) {
-    //     if (y == FIREWORK.GRID_HEIGHT - 1 && (x >= FIREWORK.GRASS_COLUMN_PADDING &&
-    //         x < FIREWORK.GRID_WIDTH - FIREWORK.GRASS_COLUMN_PADDING)
-    //     ) {
-    //         // Grass cell
-    //         return FIREWORK.GRASS_COLOR;
-    //     }
-    //     // Background cell
-    //     return FIREWORK.BG_COLOR;
-    // },
-}
