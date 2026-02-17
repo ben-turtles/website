@@ -19,6 +19,7 @@ PB_GAME.LEVELS.push({
 
 // Level 2
 PB_GAME.LEVELS.push({
+    name: "Turning",
     controls: "R - Rotate",
     player: {
         pivot: [3, 7],
@@ -32,7 +33,7 @@ PB_GAME.LEVELS.push({
 
 // Level 3
 PB_GAME.LEVELS.push({
-    name: "Rotating, Again",
+    name: "Turning, Again",
     player: {
         pivot: [3, 4],
         shape: PB_GAME.SHAPES.VERTICAL_RECTANGLE
