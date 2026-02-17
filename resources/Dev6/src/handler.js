@@ -234,7 +234,7 @@ PB_GAME.HANDLER.updateLevelState = function() {
         controls = " | " + controls;
     }
     const name = PB_GAME.currentLevelState.name;
-    PS.statusText(`Level ${PB_GAME.currentLevelIndex + 1}${name != null ? " - " + name : ""}${controls}`);
+    PS.statusText(`Level ${PB_GAME.currentLevelIndex + 1}${name != null ? ": " + name : ""}${controls}`);
 
     // Draw walls
     if (PB_GAME.currentLevelState.walls != null) {
