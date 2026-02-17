@@ -171,16 +171,23 @@ PB_GAME.UTIL.fillShape = function(pivot, shape, color) {
     });
 }
 
+// Returns whether at the offset from the pivot, there is another cell given cells array [[x, y]].
 PB_GAME.UTIL.isCellAtOffsetFromPivot = function(pivot, offset, cells) {
     const pivotWithOffset = PB_GAME.UTIL.addOffset(pivot, offset);
     return cells.some(otherCell => PB_GAME.UTIL.doPivotsOverlap(otherCell, pivotWithOffset))
 }
 
-// Fills shape border at the pivot with size and color
-PB_GAME.UTIL.fillShapeBorder = function(pivot, shape, size, color) {
+// Fills shape border at the pivot with size and color. If overlay shape + pivot provided,
+// doesn't create a border where overlay shape is.
+PB_GAME.UTIL.fillShapeBorder = function(pivot, shape, size, color, overlayPivot, overlayShape) {
     const shapeCells = PB_GAME.UTIL.getShapeCells(pivot, shape);
+    const overlayCells = overlayPivot != null ? PB_GAME.UTIL.getShapeCells(overlayPivot, overlayShape) : [];
     shapeCells.forEach(cell => {
         let borders = {};
+
+        if (overlayCells.some(overlayCell => PB_GAME.UTIL.doPivotsOverlap(overlayCell, cell))) {
+            return;
+        }
 
         // If no cell in directions, create a border there
         if (!PB_GAME.UTIL.isCellAtOffsetFromPivot(cell, [-1, 0], shapeCells)) {
@@ -347,9 +354,14 @@ PB_GAME.UTIL.ACTOR.fillActor = function(actor, color) {
     PB_GAME.UTIL.fillShape(actor.pivot, actor.shape, color);
 }
 
-// Fills actor border with the size and color
-PB_GAME.UTIL.ACTOR.fillActorBorder = function(actor, size, color) {
-    PB_GAME.UTIL.fillShapeBorder(actor.pivot, actor.shape, size, color);
+// Fills actor border with the size and color. If overlay actor provided,
+// doesn't create a border where overlay actor is.
+PB_GAME.UTIL.ACTOR.fillActorBorder = function(actor, size, color, overlayActor) {
+    PB_GAME.UTIL.fillShapeBorder(
+        actor.pivot, actor.shape, size, color,
+        overlayActor != null ? overlayActor.pivot : null,
+        overlayActor != null ? overlayActor.shape : null
+    );
 }
 
 // Returns [x, y] stating where actor will be at when moving the offset [x, y]

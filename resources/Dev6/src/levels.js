@@ -19,7 +19,6 @@ PB_GAME.LEVELS.push({
 
 // Level 2
 PB_GAME.LEVELS.push({
-    name: "Turning",
     controls: "R - Rotate",
     player: {
         pivot: [3, 7],
@@ -33,7 +32,7 @@ PB_GAME.LEVELS.push({
 
 // Level 3
 PB_GAME.LEVELS.push({
-    name: "Turning, Again",
+    name: "Rotating, Again",
     player: {
         pivot: [3, 4],
         shape: PB_GAME.SHAPES.VERTICAL_RECTANGLE
@@ -173,7 +172,6 @@ PB_GAME.LEVELS.push({
 
 // Level 8
 PB_GAME.LEVELS.push({
-    name: "Powering Up",
     controls: "Space - Connect",
     player: {
         pivot: [3, 5],
@@ -647,9 +645,7 @@ PB_GAME.LEVELS.push({
     showRestartControls: true,
     player: {
         pivot: [10, 7],
-        shape: {
-            offsets: []
-        }
+        shape: PB_GAME.SHAPES.SMALL_SQUARE
     },
     goal: {
         pivot: [10, 7],
@@ -742,3 +738,75 @@ PB_GAME.LEVELS.push({
         [7, 12],
     ]
 });
+
+// TODO IF ROTATE when only 1x1 don't play rotate sfx
+// Level 18
+PB_GAME.LEVELS.push({
+    name: "Ribcage",
+    showRestartControls: true,
+    player: {
+        pivot: [10, 5],
+        shape: {
+            offsets: [
+                [0, -3],
+                [0, -2],
+                [0, -1],
+                [0, 1],
+                [0, 2],
+                [0, 3],
+            ]
+        }
+    },
+    goal: {
+        pivot: [5, 10],
+        shape: {
+            offsets: [
+                [-4, 0],
+                [-3, 0],
+                [-2, 0],
+                [-1, 0],
+                [1, 0],
+                [2, 0],
+                [3, 0],
+                [4, 0],
+                [-2, -1],
+                [0, 1],
+                [2, -1],
+            ]
+        }
+    },
+    walls: [
+        [13, 1],
+        [0, 5],
+        [1, 5],
+        [2, 5],
+        [3, 5],
+        [4, 5],
+        [0, 3],
+        [1, 3],
+        [8, 0],
+        [12, 12],
+        [13, 12],
+        [0, 0],
+        [0, 1],
+        [0, 2],
+        [1, 0],
+        [1, 1],
+        [1, 2],
+        [2, 0],
+        [2, 1],
+        [2, 2],
+    ],
+    pickups: [
+        [13, 0],
+        [0, 4],
+        [0, 6],
+        [7, 0],
+        [11, 12],
+        // [2, 1],
+        // [7, 12],
+    ]
+});
+
+// 19: Fission
+// 20: The Spiral

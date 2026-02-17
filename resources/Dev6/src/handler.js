@@ -7,6 +7,8 @@ PB_GAME.HANDLER = {};
 PB_GAME.currentLevelIndex = 0;
 PB_GAME.currentLevelState = null;
 PB_GAME.showRotatePreview = false;
+PB_GAME.drawPlayerColor = PB_GAME.CONSTANTS.PLAYER_COLOR;
+PB_GAME.drawGoalColor = PB_GAME.CONSTANTS.GOAL_COLOR;
 
 // Player
 
@@ -44,7 +46,7 @@ PB_GAME.HANDLER.tryWithLevelStateUpdate = function(handler) {
         }
         // Else, update state
         else {
-            PB_GAME.HANDLER.updateLevelState();
+            PB_GAME.HANDLER.updateCurrentLevelState();
         }
     }
 }
@@ -74,7 +76,7 @@ PB_GAME.HANDLER.tryMovePlayer = function(offset) {
 // Toggles showing player where they would rotate where they currently are.
 PB_GAME.HANDLER.toggleRotatePreview = function(enabled) {
     PB_GAME.showRotatePreview = enabled
-    PB_GAME.HANDLER.updateLevelState();
+    PB_GAME.HANDLER.updateCurrentLevelState();
 }
 
 // Tries to rotate the player. Can fail if wall is in the way
@@ -88,16 +90,18 @@ PB_GAME.HANDLER.tryRotatePlayer = function() {
         if (isValid) {
             levelState.player = rotatedPlayer;
         }
-        if (isValid) {
-            const forceComplete = PB_GAME.HANDLER.isPlayerOverlappingGoal(levelState);
-            if (!forceComplete) {
-                // If already completed, don't play sfx to not overlap them
-                PS.audioPlay("fx_rip");
+        if (levelState.player.shape.offsets.length > 0) {
+            if (isValid) {
+                const forceComplete = PB_GAME.HANDLER.isPlayerOverlappingGoal(levelState);
+                if (!forceComplete) {
+                    // If already completed, don't play sfx to not overlap them
+                    PS.audioPlay("fx_rip");
+                }
+                return [false, forceComplete]
             }
-            return [false, forceComplete]
-        }
-        else {
-            PS.audioPlay("fx_bloop");
+            else {
+                PS.audioPlay("fx_bloop");
+            }
         }
     });
 }
@@ -136,35 +140,42 @@ PB_GAME.HANDLER.tryConnectPlayer = function() {
     });
 }
 
-// Flashes player a certain color temporarily. If rate supplied, divides how much time should take by default
-PB_GAME.HANDLER.flashPlayer = function(flashColor, rate) {
+// Flashes player a certain color temporarily. If rate supplied, divides how much time should take by default.
+// If colorGoal supplied, the goal will be colored matching the player.
+PB_GAME.HANDLER.flashPlayer = function(flashColor, rate, colorGoal) {
     if (PB_GAME.currentLevelState == null) {
         return;
     }
-    let player = PB_GAME.currentLevelState.player;
     const useRate = rate != null ? rate : 1;
-    const colorMethod = (startColor, finalColor, alpha) => {
-        const color = PB_GAME.UTIL.lerpColor(startColor, finalColor, alpha);
-        if (PB_GAME.currentLevelState != null) {
-            player = PB_GAME.currentLevelState.player;
+    const playerColor = PB_GAME.CONSTANTS.PLAYER_COLOR;
+    const goalColor = playerColor;
+    const levelState = PB_GAME.currentLevelState;
+    const colorMethod = (forward, alpha) => {
+        PB_GAME.drawPlayerColor = PB_GAME.UTIL.lerpColor(
+            forward ? playerColor : flashColor, forward ? flashColor : playerColor, alpha
+        );
+        if (colorGoal) {
+            PB_GAME.drawGoalColor = PB_GAME.UTIL.lerpColor(
+                forward ? goalColor : flashColor, forward ? flashColor : goalColor, alpha
+            )
         }
-        if (player != null) {
-
-        }
-        PB_GAME.UTIL.ACTOR.fillActor(player, color);
-        PB_GAME.UTIL.ACTOR.fillActorBorder(player, PB_GAME.CONSTANTS.GOAL_BORDER_SIZE, color);
+        PB_GAME.HANDLER.updateLevelState(levelState, colorGoal);
     }
     PB_GAME.UTIL.tweenMethod(
         PB_GAME.CONSTANTS.PLAYER_GOAL_SHINE_IN_TIME / useRate,
         (alpha) => {
-            colorMethod(PB_GAME.CONSTANTS.PLAYER_COLOR, flashColor, alpha);
+            colorMethod(true, alpha);
         },
         () => {
+            colorMethod(true, 1);
             PB_GAME.UTIL.delay(PB_GAME.CONSTANTS.PLAYER_GOAL_SHINE_OUT_DELAY, () => {
                 PB_GAME.UTIL.tweenMethod(
                     PB_GAME.CONSTANTS.PLAYER_GOAL_SHINE_OUT_TIME / useRate,
                     (alpha) => {
-                        colorMethod(flashColor, PB_GAME.CONSTANTS.PLAYER_COLOR, alpha);
+                        colorMethod(false, alpha);
+                    },
+                    () => {
+                        colorMethod(false, 1);
                     }
                 );
             });
@@ -181,7 +192,15 @@ PB_GAME.HANDLER.isPlayerOverlappingGoal = function(levelState) {
     return PB_GAME.UTIL.ACTOR.doActorsOverlap(levelState.player, levelState.goal)
 }
 
-// Clears level screen, erasing all actors and borders
+// Redraws the grid border, encapsulating the edges of the game area.
+PB_GAME.HANDLER.drawGridBorder = function() {
+    PB_GAME.UTIL.fillRegionBorder(
+        [0, 0], [PB_GAME.CONSTANTS.GRID_SIZE, PB_GAME.CONSTANTS.GRID_SIZE],
+        PB_GAME.CONSTANTS.WALL_SIZE, PB_GAME.CONSTANTS.WALL_COLOR
+    );
+}
+
+// Clears level screen, erasing all actors and clearing borders.
 PB_GAME.HANDLER.clearLevelScreen = function() {
     // Clear level
     PS.color(PS.ALL, PS.ALL, PB_GAME.CONSTANTS.LEVEL_BG_COLOR);
@@ -189,10 +208,7 @@ PB_GAME.HANDLER.clearLevelScreen = function() {
     
     // Refresh grid border
 	PS.border(PS.ALL, PS.ALL, 0);
-    PB_GAME.UTIL.fillRegionBorder(
-        [0, 0], [PB_GAME.CONSTANTS.GRID_SIZE, PB_GAME.CONSTANTS.GRID_SIZE],
-        PB_GAME.CONSTANTS.WALL_SIZE, PB_GAME.CONSTANTS.WALL_COLOR
-    );
+    PB_GAME.HANDLER.drawGridBorder();
 }
 
 // Returns true if the level cannot be won in its current position
@@ -211,12 +227,8 @@ PB_GAME.HANDLER.getLevelStateImpossible = function(levelState) {
     return isImpossible;
 }
 
-// Updates and draws current level state
-PB_GAME.HANDLER.updateLevelState = function() {
-    const levelState = PB_GAME.currentLevelState;
-    if (levelState == null) {
-        return;
-    }
+// Updates and draws the specified level state.
+PB_GAME.HANDLER.updateLevelState = function(levelState) {
 
     // Clear level
     PB_GAME.HANDLER.clearLevelScreen();
@@ -233,21 +245,20 @@ PB_GAME.HANDLER.updateLevelState = function() {
     if (controls.length > 0) {
         controls = " | " + controls;
     }
-    const name = PB_GAME.currentLevelState.name;
+    const name = levelState.name;
     PS.statusText(`Level ${PB_GAME.currentLevelIndex + 1}${name != null ? ": " + name : ""}${controls}`);
 
     // Draw walls
-    if (PB_GAME.currentLevelState.walls != null) {
-        PB_GAME.currentLevelState.walls.forEach(wall => {
+    if (levelState.walls != null) {
+        levelState.walls.forEach(wall => {
             PS.color(wall[0], wall[1], PB_GAME.CONSTANTS.WALL_COLOR);
         });
     }
 
     // Draw pickups
-    const playerColor = PB_GAME.CONSTANTS.PLAYER_COLOR;
-    if (PB_GAME.currentLevelState.pickups != null) {
-        PB_GAME.currentLevelState.pickups.forEach(pickup => {
-            PS.color(pickup[0], pickup[1], playerColor);
+    if (levelState.pickups != null) {
+        levelState.pickups.forEach(pickup => {
+            PS.color(pickup[0], pickup[1], PB_GAME.CONSTANTS.PICKUP_COLOR);
         });
     }
     
@@ -276,11 +287,20 @@ PB_GAME.HANDLER.updateLevelState = function() {
             })
         }
     }
-    PB_GAME.UTIL.ACTOR.fillActor(levelState.player, playerColor);
+    PB_GAME.UTIL.ACTOR.fillActorBorder(
+        levelState.goal, PB_GAME.CONSTANTS.GOAL_BORDER_SIZE, PB_GAME.drawGoalColor, levelState.player
+    );
+    PB_GAME.UTIL.ACTOR.fillActor(levelState.player, PB_GAME.drawPlayerColor);
     PS.glyph(levelState.player.pivot[0], levelState.player.pivot[1], PB_GAME.CONSTANTS.PLAYER_PIVOT_GLYPH);
-    PB_GAME.UTIL.ACTOR.fillActorBorder(levelState.goal, PB_GAME.CONSTANTS.GOAL_BORDER_SIZE, playerColor);
-    // PS.debug(levelState.player.shape.offsets);
-    // PS.debug(PB_GAME.UTIL.ACTOR.getActorCells(levelState.player) + "\n");
+}
+
+// Updates and draws current level state.
+PB_GAME.HANDLER.updateCurrentLevelState = function() {
+    const levelState = PB_GAME.currentLevelState;
+    if (levelState == null) {
+        return;
+    }
+    PB_GAME.HANDLER.updateLevelState(levelState);
 }
 
 // Loads victory screen
@@ -309,14 +329,15 @@ PB_GAME.HANDLER.loadVictoryScreen = function() {
 
 // Completes current level.
 PB_GAME.HANDLER.completeLevel = function() {
-    if (PB_GAME.currentLevelState == null) {
+    const levelState = PB_GAME.currentLevelState;
+    if (levelState == null) {
         return;
     }
     PS.audioPlay("fx_powerup8");
 
     // Update final level state
     PB_GAME.HANDLER.toggleRotatePreview(false);
-    PB_GAME.HANDLER.updateLevelState();
+    PB_GAME.HANDLER.updateLevelState(levelState);
 
     // Move to next level after delay
     PB_GAME.UTIL.delay(PB_GAME.CONSTANTS.NEXT_LEVEL_LOAD_DELAY, () => {
@@ -332,7 +353,7 @@ PB_GAME.HANDLER.completeLevel = function() {
     })
 
     // Shiny player flash on completion
-    PB_GAME.HANDLER.flashPlayer(PB_GAME.CONSTANTS.PLAYER_GOAL_SHINE_COLOR);
+    PB_GAME.HANDLER.flashPlayer(PB_GAME.CONSTANTS.PLAYER_GOAL_SHINE_COLOR, null, true);
 
     // Clear level state to disable inputs
     PB_GAME.currentLevelState = null;
@@ -373,7 +394,7 @@ PB_GAME.HANDLER.loadLevel = function(levelIndex) {
     PB_GAME.currentLevelState = levelState;
 
     // Draw level state
-    PB_GAME.HANDLER.updateLevelState();
+    PB_GAME.HANDLER.updateLevelState(levelState);
     PS.audioPlay("fx_silencer");
     return true;
 }
