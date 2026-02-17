@@ -62,7 +62,7 @@ PB_GAME.LEVELS.push({
 
 // Level 5
 PB_GAME.LEVELS.push({
-    name: "Hole in The Wall",
+    name: "Hole In The Wall",
     player: {
         pivot: [10, 7],
         shape: PB_GAME.SHAPES.VERTICAL_RECTANGLE
