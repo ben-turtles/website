@@ -1,6 +1,6 @@
 // handler.js
 // Handler functions for Perlenblocks game
-// Ben Reinherz 2025
+// Ben Reinherz 2026
 
 PB_GAME.HANDLER = {};
 

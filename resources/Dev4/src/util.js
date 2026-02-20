@@ -1,6 +1,6 @@
 // util.js
 // Utility functions for Perlenblocks game
-// Ben Reinherz 2025
+// Ben Reinherz 2026
 
 /*
 TYPES:
