@@ -138,6 +138,11 @@ TENNIS_GAME.UTIL.scalePivot = function(pivot, scalar) {
     return [pivot[0] * scalar, pivot[1] * scalar];
 }
 
+// Returns the [x, y] floored the nearest integer.
+TENNIS_GAME.UTIL.floorPivot = function(pivot) {
+    return [Math.floor(pivot[0]), Math.floor(pivot[1])];
+}
+
 // Returns the pivot rotated around (0, 0) by the angle (IN RADIANS) by applying a 2D rotation matrix
 TENNIS_GAME.UTIL.rotatePivot = function(pivot, angle) {
     const [x, y] = pivot;
@@ -146,6 +151,32 @@ TENNIS_GAME.UTIL.rotatePivot = function(pivot, angle) {
         Math.round((x * Math.cos(angle)) - (y * Math.sin(angle))),
         Math.round((x * Math.sin(angle)) + (y * Math.cos(angle)))
     ];
+}
+
+// Returns length of the pivot
+TENNIS_GAME.UTIL.getPivotLength = function(pivot) {
+    const [x, y] = pivot;
+    return Math.sqrt(Math.pow(x, 2) + Math.pow(y, 2));
+}
+
+// Returns pivot normalized ([x, y] where the length is 1)
+TENNIS_GAME.UTIL.normalizePivot = function(pivot) {
+    const length = TENNIS_GAME.UTIL.getPivotLength(pivot);
+    return [pivot[0] / length, pivot[1] / length];
+}
+
+// Returns the dot product between two pivots
+TENNIS_GAME.UTIL.dotPivots = function(pivot1, pivot2) {
+    return (pivot1[0] * pivot2[0]) + (pivot1[1] * pivot2[1])
+}
+
+// Returns the angle in radians between the two pivots
+TENNIS_GAME.UTIL.getAngleBetweenPivots = function(pivot1, pivot2) {
+    return Math.acos(
+        (TENNIS_GAME.UTIL.dotPivots(pivot1, pivot2)) / (
+            TENNIS_GAME.UTIL.getPivotLength(pivot1) * TENNIS_GAME.UTIL.getPivotLength(pivot2)
+        )
+    );
 }
 
 // Fills the pivot with the color, if in bounds
