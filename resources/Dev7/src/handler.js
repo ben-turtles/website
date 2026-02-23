@@ -53,7 +53,6 @@ TENNIS_GAME.HANDLER.calculateBallPoints = function(ball, edgePivot) {
         TENNIS_GAME.CONSTANTS.POINTS_OUT_X_MAX,
         1 - (edgeX / TENNIS_GAME.CONSTANTS.GRID_WIDTH)
     );
-    // PS.debug(speedPoints + ", " + outXPoints);
     const points = TENNIS_GAME.UTIL.floorToMultiple(speedPoints + outXPoints, TENNIS_GAME.CONSTANTS.POINTS_MULTIPLE);
     return [points, 0];
 }
@@ -108,7 +107,7 @@ TENNIS_GAME.HANDLER.handleBallOutOfBounds = function(ball, edgePivot) {
             TENNIS_GAME.readyDisplayTimer = TENNIS_GAME.CONSTANTS.LEVEL_TUTORIAL_READY_TIMER;
         }
     }
-    else {//if (!TENNIS_GAME.tutorial) {
+    else if (!TENNIS_GAME.tutorial) {
         // Not hit, and not tutorial; mark player
         TENNIS_GAME.marks += 1;
     }
@@ -276,7 +275,10 @@ TENNIS_GAME.HANDLER.updateRacketPosition = function() {
 // Draws background
 TENNIS_GAME.HANDLER.drawBackground = function() {
     PS.glyph(PS.ALL, PS.ALL, 0);
-    PS.color(PS.ALL, PS.ALL, TENNIS_GAME.CONSTANTS.LEVEL_BG_COLOR);
+    TENNIS_GAME.UTIL.fillBackground(
+        TENNIS_GAME.CONSTANTS.GRID_WIDTH, TENNIS_GAME.CONSTANTS.GRID_HEIGHT,
+        TENNIS_GAME.CONSTANTS.LEVEL_BACKGROUND, TENNIS_GAME.CONSTANTS.COURT_COLOR
+    );
 }
 
 // Draws all balls

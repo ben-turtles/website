@@ -204,25 +204,22 @@ TENNIS_GAME.UTIL.fillGlyph = function(pivot, glyph, glyphColor) {
     }
 }
 
-// Fills border around region of the two points with size and color
-TENNIS_GAME.UTIL.fillRegionBorder = function(start, end, size, color) {
-    const [x1, y1] = start;
-    const [x2, y2] = end;
-
-    // Top + bottom borders
-    for (let x = x1; x < x2; x++) {
-        PS.border(x, y1, {top: size});
-        PS.border(x, y2 - 1, {bottom: size});
-        PS.borderColor(x, y1, color);
-        PS.borderColor(x, y2 - 1, color);
-    }
-
-    // Left + right borders
-    for (let y = y1; y < y2; y++) {
-        PS.border(x1, y, {left: size});
-        PS.border(x2 - 1, y, {right: size});
-        PS.borderColor(x1, y, color);
-        PS.borderColor(x2 - 1, y, color);
+// Fills the width and height with the background rows.
+TENNIS_GAME.UTIL.fillBackground = function(width, height, background, defaultColor) {
+    for (let y = 0; y < height; y++) {
+        const row = y < background.length ? background[y] :
+                background.length > 0 ? background[background.length - 1] : defaultColor;
+        const rowType = typeof(row);
+        const isArray = rowType == "object";
+        if (isArray && row.length > 0) {
+            for (let x = 0; x < width; x++) {
+                const cell = x < row.length ? row[x] : row[row.length - 1];
+                PS.color(x, y, cell);
+            }
+        }
+        else {
+            PS.color(PS.ALL, y, isArray ? defaultColor : row);
+        }
     }
 }
 
