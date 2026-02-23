@@ -33,6 +33,11 @@ TENNIS_GAME.UTIL.toward = function(from, to, delta) {
     return Math.max(from - delta, to);
 }
 
+// Floors the number to the nearest of the multiple
+TENNIS_GAME.UTIL.floorToMultiple = function(num, multiple) {
+    return Math.floor(num / multiple) * multiple;
+}
+
 // Timers
 
 // Runs handler every step, returning string to cancel with timerStop.
@@ -106,8 +111,8 @@ TENNIS_GAME.UTIL.getInBoundsFromPivot = function(pivot) {
     }
     // Clamp x and y values
     return [
-        TENNIS_GAME.UTIL.clamp(pivot[0], 0, TENNIS_GAME.CONSTANTS.GRID_SIZE - 1),
-        TENNIS_GAME.UTIL.clamp(pivot[1], 0, TENNIS_GAME.CONSTANTS.GRID_SIZE - 1)
+        TENNIS_GAME.UTIL.clamp(pivot[0], 0, TENNIS_GAME.CONSTANTS.GRID_WIDTH - 1),
+        TENNIS_GAME.UTIL.clamp(pivot[1], 0, TENNIS_GAME.CONSTANTS.GRID_HEIGHT - 1)
     ];
 }
 
@@ -187,6 +192,14 @@ TENNIS_GAME.UTIL.fillPivot = function(pivot, color) {
     PS.color(pivot[0], pivot[1], color);
 }
 
+// Fills the pivot with the glyph, if in bounds
+TENNIS_GAME.UTIL.fillGlyph = function(pivot, glyph) {
+    if (TENNIS_GAME.UTIL.isPivotOutOfBounds(pivot)) {
+        return;
+    }
+    PS.glyph(pivot[0], pivot[1], glyph);
+}
+
 // Fills border around region of the two points with size and color
 TENNIS_GAME.UTIL.fillRegionBorder = function(start, end, size, color) {
     const [x1, y1] = start;
@@ -215,6 +228,9 @@ TENNIS_GAME.UTIL.fillRegionBorder = function(start, end, size, color) {
 TENNIS_GAME.UTIL.drawSpriteCell = function(pivot, spriteCell) {
     const cellPivot = TENNIS_GAME.UTIL.addOffset(pivot, spriteCell.offset);
     TENNIS_GAME.UTIL.fillPivot(cellPivot, spriteCell.color);
+    if (spriteCell.glyph) {
+        TENNIS_GAME.UTIL.fillGlyph(cellPivot, spriteCell.glyph);
+    }
 }
 
 // Fills shape at the pivot with a color
