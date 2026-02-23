@@ -106,6 +106,7 @@ TENNIS_GAME.HANDLER.handleBallOutOfBounds = function(ball, edgePivot) {
         if (TENNIS_GAME.tutorial) {
             TENNIS_GAME.tutorial = false;
             TENNIS_GAME.readyDisplayTimer = TENNIS_GAME.CONSTANTS.LEVEL_TUTORIAL_READY_TIMER;
+            PS.audioPlay("fx_airhorn", {path: "./", fileTypes: ["wav"]});
         }
     }
     else if (!TENNIS_GAME.tutorial) {
@@ -456,6 +457,7 @@ TENNIS_GAME.HANDLER.start = function() {
 	PS.audioLoad("fx_scratch", {lock: true});
 	PS.audioLoad("fx_swoosh", {lock: true});
 	PS.audioLoad("fx_wilhelm", {lock: true});
+	PS.audioLoad("fx_airhorn", {lock: true, path: "./", fileTypes: ["wav"]});
     /*
     TODO STUFF
     - cover.png (use apple tennis racket emoji?)
