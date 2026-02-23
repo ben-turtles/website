@@ -111,6 +111,10 @@ TENNIS_GAME.HANDLER.handleBallOutOfBounds = function(ball, edgePivot) {
     else if (!TENNIS_GAME.tutorial) {
         // Not hit, and not tutorial; mark player
         TENNIS_GAME.marks += 1;
+        PS.audioPlay("fx_scratch");
+        if (TENNIS_GAME.ballSpawnTimer == 0) {
+            TENNIS_GAME.ballSpawnTimer = 1;
+        }
     }
 }
 
@@ -133,6 +137,7 @@ TENNIS_GAME.HANDLER.updateBalls = function() {
                 ball.hit = true;
                 ball.speed = 0;
                 newPivot = ball.pivot;
+                PS.audioPlay("fx_bucket");
             }
         }
         if (ball.hit) {
@@ -163,16 +168,19 @@ TENNIS_GAME.HANDLER.getCurrentDifficulty = function() {
     // Change speed based on difficulty
     var speed;
     if (TENNIS_GAME.points > 200000) {
-        speed = 0.8;
+        speed = 0.85;
     }
     else if (TENNIS_GAME.points > 150000) {
-        speed = 0.75;
+        speed = 0.8;
     }
     else if (TENNIS_GAME.points > 100000) {
-        speed = 0.65;
+        speed = 0.75;
     }
     else if (TENNIS_GAME.points > 75000) {
-        speed = 0.55;
+        speed = 0.6;
+    }
+    else if (TENNIS_GAME.points > 50000) {
+        speed = 0.5;
     }
     else if (TENNIS_GAME.points > 25000) {
         speed = 0.4;
@@ -216,6 +224,7 @@ TENNIS_GAME.HANDLER.spawnBalls = function() {
             color: ballType.color,
         });
         TENNIS_GAME.ballSpawnTimer = difficulty.spawnDelay;
+        PS.audioPlay("fx_swoosh");
     }
 }
 
@@ -302,10 +311,12 @@ TENNIS_GAME.HANDLER.handleRacketBallHits = function(racketSpeed, angleStart, ang
                 );
                 ball.speed += racketSpeed * TENNIS_GAME.CONSTANTS.BALL_FAST_DEFLECT_SPEED_FACTOR;
                 ball.direction = direction;
+                PS.audioPlay("fx_blast2");
             }
             else {
                 // Stop ball if slow
                 ball.speed = 0;
+                PS.audioPlay("fx_bucket");
             }
         }
     })
@@ -419,6 +430,7 @@ TENNIS_GAME.HANDLER.update = function() {
         TENNIS_GAME.HANDLER.draw();
         PS.statusText(`GAME OVER! You got ${TENNIS_GAME.points} points!`);
         PS.statusColor(TENNIS_GAME.CONSTANTS.LEVEL_GAME_OVER_COLOR);
+        PS.audioPlay("fx_wilhelm");
         TENNIS_GAME.marks = -1;
         return;
     }
@@ -439,44 +451,15 @@ TENNIS_GAME.HANDLER.update = function() {
 TENNIS_GAME.HANDLER.start = function() {
     
     // Load and lock audio
-	// PS.audioLoad("fx_silencer", {lock: true});
-	// PS.audioLoad("fx_bloop", {lock: true});
-	// PS.audioLoad("fx_rip", {lock: true});
-	// PS.audioLoad("fx_squink", {lock: true});
-	// PS.audioLoad("fx_powerup8", {lock: true});
-	// PS.audioLoad("fx_tada", {lock: true});
-    
-
+	PS.audioLoad("fx_blast2", {lock: true});
+	PS.audioLoad("fx_bucket", {lock: true});
+	PS.audioLoad("fx_scratch", {lock: true});
+	PS.audioLoad("fx_swoosh", {lock: true});
+	PS.audioLoad("fx_wilhelm", {lock: true});
     /*
     TODO STUFF
-    - ball spawning
-    - survey
     - cover.png (use apple tennis racket emoji?)
-    - background
-    - audio
     */
-
-    // TODO:
-    /*
-     - Ball spawning:
-        have a spawn delay, meaning the time between balls spawning:
-            with more points this will decrease linearly
-        max balls, meaning the maximum amount of balls that can be on screen:
-        different types, some only appear at certain thresholds
-
-        define KILL_POINTS: once you have this many points, the game is at its hardest difficulty,
-        define stuff in terms of this
-        define MIN_POINTS: once you have this many points, the game difficulty can now increase
-        use this for tutorial system
-
-        FLOOR IT? Basically in a certain point range, balls have a specific difficulty so
-        eventually at KILL_POINTS you have reached max difficulty only then
-    - Health:
-        if a ball goes off to the right without being hit, lose a heart
-        indicate with a heartbreak emoji and bad sound? display hearts somehow
-
-    */
-
     
     // Set defaults
     TENNIS_GAME.balls = [];
