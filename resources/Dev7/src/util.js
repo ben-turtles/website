@@ -192,12 +192,16 @@ TENNIS_GAME.UTIL.fillPivot = function(pivot, color) {
     PS.color(pivot[0], pivot[1], color);
 }
 
-// Fills the pivot with the glyph, if in bounds
-TENNIS_GAME.UTIL.fillGlyph = function(pivot, glyph) {
+// Fills the pivot with the glyph, if in bounds. Optionally can change color of glyph too
+TENNIS_GAME.UTIL.fillGlyph = function(pivot, glyph, glyphColor) {
     if (TENNIS_GAME.UTIL.isPivotOutOfBounds(pivot)) {
         return;
     }
-    PS.glyph(pivot[0], pivot[1], glyph);
+    const [x, y] = pivot;
+    PS.glyph(x, y, glyph);
+    if (glyphColor != null) {
+        PS.glyphColor(x, y, glyphColor);
+    }
 }
 
 // Fills border around region of the two points with size and color

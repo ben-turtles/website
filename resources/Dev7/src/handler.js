@@ -7,6 +7,7 @@ TENNIS_GAME.HANDLER = {};
 TENNIS_GAME.points = 0;
 TENNIS_GAME.tutorial = false;
 TENNIS_GAME.readyDisplayTimer = 0;
+TENNIS_GAME.marks = 0;
 
 TENNIS_GAME.playerPosition = null;   // [x, y] pos
 TENNIS_GAME.playerMoveFlags = null;
@@ -57,7 +58,7 @@ TENNIS_GAME.HANDLER.calculateBallPoints = function(ball, edgePivot) {
     return [points, 0];
 }
 
-// Handles ball being hit, adjusting effects for it
+// Handles ball being hit, adjusting effects for it. Can return pivot to move ball to new position.
 TENNIS_GAME.HANDLER.handleBallHit = function(ball) {
     const isSlow = ball.speed <= TENNIS_GAME.CONSTANTS.RACKET_MIN_HIT_SPEED;
     if (ball.hitTimer == null) {
@@ -77,7 +78,7 @@ TENNIS_GAME.HANDLER.handleBallHit = function(ball) {
         );
     }
     if (isSlow && alpha >= 1) {
-        newPivot = [-1, -1];
+        return [-1, -1];
     }
     else {
         ball.hitTimer++;
@@ -88,6 +89,11 @@ TENNIS_GAME.HANDLER.handleBallHit = function(ball) {
 // where ball went out of bounds.
 TENNIS_GAME.HANDLER.handleBallOutOfBounds = function(ball, edgePivot) {
     if (ball.hit) {
+        if (ball.speed == 0) {
+            // Caught slow ball, don't count for points
+            return;    
+        }
+
         // Give points
         const [points, pointAlpha] = TENNIS_GAME.HANDLER.calculateBallPoints(ball, edgePivot);
         TENNIS_GAME.points += points
@@ -102,19 +108,10 @@ TENNIS_GAME.HANDLER.handleBallOutOfBounds = function(ball, edgePivot) {
             TENNIS_GAME.readyDisplayTimer = TENNIS_GAME.CONSTANTS.LEVEL_TUTORIAL_READY_TIMER;
         }
     }
-    else if (!TENNIS_GAME.tutorial) {
-        // Not hit, and not tutorial; lose health
+    else {//if (!TENNIS_GAME.tutorial) {
+        // Not hit, and not tutorial; mark player
+        TENNIS_GAME.marks += 1;
     }
-            // PS.debug("OUT OF BOUNDS, HIT?" + hit + "\n");
-            /*
-
-     - When ball goes off screen:
-        if hit, give points
-        if not hit, lose 1 heart
-        EXCEPTION: On tutorial, "READY!" shows, then FORCED to hit one fast ball.
-           If you miss, another one spawns and game yields until you hit one
-           Include some graphic for indicating mouse/scroll wheel to players
-            */
 }
 
 // Updates all ball positions
@@ -140,7 +137,10 @@ TENNIS_GAME.HANDLER.updateBalls = function() {
         }
         if (ball.hit) {
             // Ball has been hit, do some effects
-            TENNIS_GAME.HANDLER.handleBallHit(ball);
+            const setPivot = TENNIS_GAME.HANDLER.handleBallHit(ball);
+            if (setPivot != null) {
+                newPivot = setPivot;
+            }
         }
         if (TENNIS_GAME.UTIL.isPivotOutOfBounds(newPivot)) {
             // Ball moved out of bounds
@@ -294,6 +294,17 @@ TENNIS_GAME.HANDLER.drawPlayer = function() {
     })
 }
 
+// Draws marks, indicating how many times user got marked for missing balls
+TENNIS_GAME.HANDLER.drawMarks = function() {
+    for (let mark = 0; mark < TENNIS_GAME.CONSTANTS.MARK_COUNT; mark++) {
+        const markPivot = TENNIS_GAME.CONSTANTS.MARK_PIVOTS[mark];
+        TENNIS_GAME.UTIL.fillPivot(markPivot, TENNIS_GAME.CONSTANTS.MARK_COLOR);
+        if (mark < TENNIS_GAME.marks) {
+            TENNIS_GAME.UTIL.fillGlyph(markPivot, TENNIS_GAME.CONSTANTS.MARK_GLYPH, TENNIS_GAME.CONSTANTS.MARK_GLYPH_COLOR);
+        }
+    }
+}
+
 // Draws UI, including health and status bar.
 TENNIS_GAME.HANDLER.drawUI = function() {
 
@@ -317,12 +328,8 @@ TENNIS_GAME.HANDLER.drawUI = function() {
         }
     }
 
-    // Update point displays
-        // TENNIS_GAME.pointDisplays.push({
-        //     points: points,
-        //     pointAlpha: pointAlpha,
-        //     timer: 0,
-        // });
+    // Update mark display
+    TENNIS_GAME.HANDLER.drawMarks();
 }
 
 // Draws state every game start
@@ -335,6 +342,18 @@ TENNIS_GAME.HANDLER.draw = function() {
 
 // Called every game step
 TENNIS_GAME.HANDLER.update = function() {
+    if (TENNIS_GAME.marks < 0) {
+        // Game over state, no update
+        return;
+    }
+    else if (TENNIS_GAME.marks >= TENNIS_GAME.CONSTANTS.MARK_COUNT) {
+        // Now in game over, draw final state
+        TENNIS_GAME.HANDLER.draw();
+        PS.statusText(`GAME OVER! You got ${TENNIS_GAME.points} points!`);
+        PS.statusColor(TENNIS_GAME.CONSTANTS.LEVEL_GAME_OVER_COLOR);
+        TENNIS_GAME.marks = -1;
+        return;
+    }
 
     // Update player
     TENNIS_GAME.HANDLER.updatePlayerPosition();
@@ -349,26 +368,7 @@ TENNIS_GAME.HANDLER.update = function() {
 
 // Starts game handling
 TENNIS_GAME.HANDLER.start = function() {
-    // FROG_GAME.UTIL.onStep(() => {
-    //     var [x, y] = FROG_GAME.frogPosition;
-    //     if (y < groundY) {
-    //         FROG_GAME.frogVelocityY = Math.min(FROG_GAME.frogVelocityY + FROG_GAME.CONSTANTS.FROG_GRAVITY, FROG_GAME.CONSTANTS.FROG_MAX_Y_VEL);
-    //         FROG_GAME.isFrogJumping = false;
-    //     }
-    //     else if (FROG_GAME.isFrogJumping) {
-    // FROG_GAME.frogVelocityY += FROG_GAME.CONSTANTS.FROG_JUMP_VEL;
-    //     }
-    //     if (FROG_GAME.frogVelocityY > 0) {
-            
-    //     PS.debug(y + ", " + FROG_GAME.frogVelocityY + "\n");
-    //     }
-    //     y = Math.min(y + FROG_GAME.frogVelocityY, groundY);
-    //     if (y == groundY) {
-    //         FROG_GAME.frogVelocityY = 0;
-    //     }
-    //     FROG_GAME.frogPosition = [x, y];
-    //     FROG_GAME.HANDLER.updateFrogPosition();
-
+    
     // Load and lock audio
 	// PS.audioLoad("fx_silencer", {lock: true});
 	// PS.audioLoad("fx_bloop", {lock: true});
@@ -395,6 +395,15 @@ TENNIS_GAME.HANDLER.start = function() {
         // },
     ]
 
+    /*
+    TODO STUFF
+    - ball spawning
+    - survey
+    - cover.png (use apple tennis racket emoji?)
+    - background
+    - audio
+    */
+
     // TODO:
     /*
      - Ball spawning:
@@ -418,6 +427,7 @@ TENNIS_GAME.HANDLER.start = function() {
 
     
     // Set defaults
+    TENNIS_GAME.marks = 0;
     TENNIS_GAME.points = 0;
     TENNIS_GAME.tutorial = true;
     TENNIS_GAME.playerMoveFlags = new Set();
