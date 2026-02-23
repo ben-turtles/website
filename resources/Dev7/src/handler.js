@@ -17,7 +17,8 @@ TENNIS_GAME.racketVelocity = 0;
 TENNIS_GAME.racketCells = null;
 
 TENNIS_GAME.balls = [];
-TENNIS_GAME.pointDisplays = [];
+TENNIS_GAME.ballSpawnTimer = 0;
+// TENNIS_GAME.pointDisplays = [];
 
 
 // Pulls the racket in the direction (> 0 pulls down, < 0 pulls up) 
@@ -155,6 +156,69 @@ TENNIS_GAME.HANDLER.updateBalls = function() {
     TENNIS_GAME.balls = newBalls;
 }
 
+// Gets current difficulty depending on how many points player has
+TENNIS_GAME.HANDLER.getCurrentDifficulty = function() {
+    const types = [TENNIS_GAME.CONSTANTS.BALL_TYPE_REGULAR];
+
+    // Change speed based on difficulty
+    var speed;
+    if (TENNIS_GAME.points > 200000) {
+        speed = 0.8;
+    }
+    else if (TENNIS_GAME.points > 150000) {
+        speed = 0.75;
+    }
+    else if (TENNIS_GAME.points > 100000) {
+        speed = 0.65;
+    }
+    else if (TENNIS_GAME.points > 75000) {
+        speed = 0.55;
+    }
+    else if (TENNIS_GAME.points > 25000) {
+        speed = 0.4;
+    }
+    else if (TENNIS_GAME.points > 10000) {
+        speed = 0.3;
+    }
+    else {
+        speed = 0.2;
+    }
+    return {
+        speed: speed,
+        maxBalls: 1,
+        spawnDelay: 60,
+        ballTypes: types
+    }
+}
+
+// Spawns balls this frame depending on current difficulty
+TENNIS_GAME.HANDLER.spawnBalls = function() {
+    if (TENNIS_GAME.ballSpawnTimer > 0) {
+        TENNIS_GAME.ballSpawnTimer--;
+        return;
+    }
+    const ballCount = TENNIS_GAME.balls.length;
+    const difficulty = TENNIS_GAME.HANDLER.getCurrentDifficulty();
+    if (ballCount < difficulty.maxBalls) {
+        // We don't have the maximum amount of balls spawned; spawn a new one.
+        const spawnY = TENNIS_GAME.UTIL.randomOnRange(
+            TENNIS_GAME.CONSTANTS.BALL_SPAWN_MIN_Y,
+            TENNIS_GAME.CONSTANTS.BALL_SPAWN_MAX_Y
+        )
+        const speed = difficulty.speed;
+        const ballType = TENNIS_GAME.UTIL.randomArrayElement(difficulty.ballTypes);
+        const ballDirection = TENNIS_GAME.UTIL.randomArrayElement(ballType.directions);
+        const speedFactor = ballType.speedFactor;
+        TENNIS_GAME.balls.push({
+            speed: speed * (speedFactor != null ? speedFactor : 1),
+            direction: ballDirection,
+            pivot: [0, spawnY],
+            color: ballType.color,
+        });
+        TENNIS_GAME.ballSpawnTimer = difficulty.spawnDelay;
+    }
+}
+
 // Updates player position based on current move flags
 TENNIS_GAME.HANDLER.updatePlayerPosition = function() {
     var dir = 0;
@@ -218,23 +282,25 @@ TENNIS_GAME.HANDLER.handleRacketBallHits = function(racketSpeed, angleStart, ang
 
         // Check if ball is in range of racket 
         const distance = TENNIS_GAME.UTIL.getPivotLength(offset);
-        if (distance > TENNIS_GAME.CONSTANTS.RACKET_GAP_DISTANCE + TENNIS_GAME.CONSTANTS.RACKET_LENGTH) {
+        if (distance > TENNIS_GAME.CONSTANTS.RACKET_GAP_DISTANCE + TENNIS_GAME.CONSTANTS.RACKET_LENGTH + 1) {
             return;
         }
 
         // Check if ball's angle is betweens angles we moved between
         const angle = TENNIS_GAME.UTIL.getAngleBetweenPivots(offset, racketStartOffset);
-        const inRange = Math.min(angleStart, angleEnd) <= angle && Math.max(angleStart, angleEnd) >= angle;
+        const margin = TENNIS_GAME.CONSTANTS.RACKET_ANGLE_MARGIN;
+        const min = Math.min(angleStart, angleEnd);
+        const inRange = min - margin <= angle && Math.max(angleStart, angleEnd) >= angle;
         if (inRange) {
             ball.hit = true;
-
             if (racketSpeed >= TENNIS_GAME.CONSTANTS.RACKET_MIN_HIT_SPEED) {
                 // If racket was fast enough, adjust trajectory
-                const offsetAngle = Math.sign(angle - angleStart) * -Math.abs(TENNIS_GAME.CONSTANTS.BALL_FAST_DEFLECT_ANGLE);
+                const offsetAngle =  Math.sign(angle - angleStart) *
+                    -Math.abs(TENNIS_GAME.CONSTANTS.BALL_FAST_DEFLECT_ANGLE);
                 const direction = TENNIS_GAME.UTIL.normalizePivot(
                     TENNIS_GAME.UTIL.rotatePivot(offset, offsetAngle)
                 );
-                ball.speed = racketSpeed * TENNIS_GAME.CONSTANTS.BALL_FAST_DEFLECT_SPEED_FACTOR;
+                ball.speed += racketSpeed * TENNIS_GAME.CONSTANTS.BALL_FAST_DEFLECT_SPEED_FACTOR;
                 ball.direction = direction;
             }
             else {
@@ -363,6 +429,7 @@ TENNIS_GAME.HANDLER.update = function() {
 
     // Update balls
     TENNIS_GAME.HANDLER.updateBalls();
+    TENNIS_GAME.HANDLER.spawnBalls();
 
     // Draw screen
     TENNIS_GAME.HANDLER.draw();
@@ -379,23 +446,6 @@ TENNIS_GAME.HANDLER.start = function() {
 	// PS.audioLoad("fx_powerup8", {lock: true});
 	// PS.audioLoad("fx_tada", {lock: true});
     
-    // TENNIS_GAME.frogSprite = PS.spriteImage(TENNIS_GAME.CONSTANTS.FROG_SPRITE);
-    // PS.debug(TENNIS_GAME.frogSprite);
-
-    TENNIS_GAME.balls = [
-        {
-            speed: 0.15,
-            direction: [1, 0],
-            pivot: [0, 16],
-            color: 0x00ff00,
-        },
-        // {
-        //     speed: 0,
-        //     direction: [1, 0],
-        //     pivot: [26, 8],
-        //     color: 0x00ff00,
-        // },
-    ]
 
     /*
     TODO STUFF
@@ -429,11 +479,12 @@ TENNIS_GAME.HANDLER.start = function() {
 
     
     // Set defaults
+    TENNIS_GAME.balls = [];
     TENNIS_GAME.marks = 0;
     TENNIS_GAME.points = 0;
     TENNIS_GAME.tutorial = true;
-    TENNIS_GAME.playerMoveFlags = new Set();
     TENNIS_GAME.racketAngle = TENNIS_GAME.CONSTANTS.RACKET_ANGLE_INIT;
+    TENNIS_GAME.playerMoveFlags = new Set();
     TENNIS_GAME.playerPosition = [TENNIS_GAME.CONSTANTS.PLAYER_SPAWN_X, TENNIS_GAME.CONSTANTS.PLAYER_SPAWN_Y];
     
     // Start game loop

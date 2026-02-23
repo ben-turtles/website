@@ -95,6 +95,26 @@ TENNIS_GAME.UTIL.lerpColor = function(color1, color2, t) {
     );
 }
 
+// Random
+
+// Returns random number on range [min, max]. If decimal places is supplied, changes how many decimals in number.
+TENNIS_GAME.UTIL.randomOnRange = function(min, max, decimalPlaces = 0) {
+    const factor = Math.pow(10, decimalPlaces);
+    return min + ((PS.random( ((max - min) * factor) + 1 ) - 1) / factor);
+}
+
+// Returns random element within the array.
+TENNIS_GAME.UTIL.randomArrayElement = function(array) {
+    const length = array.length;
+    if (length == 0) {
+        return null;
+    }
+    else if (length == 1) {
+        return array[0];
+    }
+    return array[TENNIS_GAME.UTIL.randomOnRange(0, length - 1)];
+}
+
 // Pivots
 
 // Returns if the [x, y] pivot is outside of the grid.
