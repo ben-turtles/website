@@ -2,3 +2,4 @@
 Created to store development projects for IMGD2900. Currently includes:
 - [Firework Toy](https://ben-turtles.github.io/website/resources/Dev3/game.html)
 - [Perlenblocks](https://ben-turtles.github.io/website/resources/Dev6/game.html)
+- [Tennis Infinite](https://ben-turtles.github.io/website/resources/Dev7/game.html)
