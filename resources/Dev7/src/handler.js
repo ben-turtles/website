@@ -224,7 +224,7 @@ TENNIS_GAME.HANDLER.spawnBalls = function() {
             color: ballType.color,
         });
         TENNIS_GAME.ballSpawnTimer = difficulty.spawnDelay;
-        PS.audioPlay("fx_swoosh");
+        // PS.audioPlay("fx_swoosh");
     }
 }
 
