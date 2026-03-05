@@ -9,7 +9,6 @@
 
 const TENNIS_GAME = {};
 
-
 PS.init = function(system, options) {
     // Set grid basics
     PS.statusText("");
@@ -29,6 +28,9 @@ PS.keyDown = function(key, shift, ctrl, options) {
     if (TENNIS_GAME.CONSTANTS.MOVE_DOWN_KEYS.some(k => k == key)) {
         TENNIS_GAME.HANDLER.flagPlayerMove(1, true);
     }
+    if (TENNIS_GAME.CONSTANTS.CHARGE_KEYS.some(k => k == key)) {
+        TENNIS_GAME.HANDLER.toggleRacketCharge(true);
+    }
 };
 
 
@@ -38,6 +40,9 @@ PS.keyUp = function(key, shift, ctrl, options) {
     }
     if (TENNIS_GAME.CONSTANTS.MOVE_DOWN_KEYS.some(k => k == key)) {
         TENNIS_GAME.HANDLER.flagPlayerMove(1, false);
+    }
+    if (TENNIS_GAME.CONSTANTS.CHARGE_KEYS.some(k => k == key)) {
+        TENNIS_GAME.HANDLER.toggleRacketCharge(false);
     }
 };
 

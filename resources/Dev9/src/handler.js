@@ -13,17 +13,87 @@ TENNIS_GAME.playerPosition = null;   // [x, y] pos
 TENNIS_GAME.playerMoveFlags = null;
 TENNIS_GAME.playerVelocity = 0;
 TENNIS_GAME.racketAngle = 0;     // angle in radians
+TENNIS_GAME.racketColor = null;
 TENNIS_GAME.racketVelocity = 0;
 TENNIS_GAME.racketCells = null;
+TENNIS_GAME.racketChargeAlpha = 0;
+TENNIS_GAME.racketChargeTimer = null;
+TENNIS_GAME.racketChargeTimeActive = 0;
+TENNIS_GAME.racketChargeAlphaActive = 0;
 
 TENNIS_GAME.balls = [];
 TENNIS_GAME.ballSpawnTimer = 0;
+
+TENNIS_GAME.swingInputCooldown = 0;
+
+TENNIS_GAME.statusFlashColor = null;
+TENNIS_GAME.statusFlashTime = 0;
+
 // TENNIS_GAME.pointDisplays = [];
+
+// Toggles racket charge
+TENNIS_GAME.HANDLER.toggleRacketCharge = function(isCharging) {
+    if (isCharging && TENNIS_GAME.racketChargeTimer == null) {
+        const chargeTimer = TENNIS_GAME.CONSTANTS.RACKET_CHARGE_TIME;
+        var chargeCount = 0;
+        // var playedChargeSound = false;
+        var flashTimer = 0;
+        TENNIS_GAME.racketChargeTimer = TENNIS_GAME.UTIL.onStep(() => {
+            if (TENNIS_GAME.racketChargeAlpha == 1) {
+                // if (!playedChargeSound) {
+                //     playedChargeSound = true;
+                //     PS.audioPlay("fx_squink");
+                // }
+                var flashAlpha = 0;
+                if (flashTimer <= TENNIS_GAME.CONSTANTS.RACKET_CHARGE_FLASH_IN_TIME) {
+                    flashAlpha = flashTimer / TENNIS_GAME.CONSTANTS.RACKET_CHARGE_FLASH_IN_TIME;
+                }
+                else if (flashTimer <= TENNIS_GAME.CONSTANTS.RACKET_CHARGE_FLASH_IN_TIME +
+                    TENNIS_GAME.CONSTANTS.RACKET_CHARGE_FLASH_OUT_TIME
+                ) {
+                    flashAlpha = 1 - (
+                        (flashTimer - TENNIS_GAME.CONSTANTS.RACKET_CHARGE_FLASH_IN_TIME) /
+                        TENNIS_GAME.CONSTANTS.RACKET_CHARGE_FLASH_OUT_TIME
+                    );
+                }
+                else {
+                    return;
+                }
+                flashTimer++;
+                TENNIS_GAME.racketColor = TENNIS_GAME.UTIL.lerpColor(
+                    TENNIS_GAME.CONSTANTS.RACKET_CHARGE_COLOR, TENNIS_GAME.CONSTANTS.RACKET_CHARGE_FLASH_COLOR,
+                    flashAlpha
+                );
+                return;
+            }
+            chargeCount++;
+            TENNIS_GAME.racketChargeAlpha = chargeCount / chargeTimer;
+            TENNIS_GAME.racketColor = TENNIS_GAME.UTIL.lerpColor(
+                TENNIS_GAME.CONSTANTS.RACKET_COLOR, TENNIS_GAME.CONSTANTS.RACKET_CHARGE_COLOR,
+                TENNIS_GAME.racketChargeAlpha
+            )
+        });
+    }
+    else if (!isCharging) {
+        if (TENNIS_GAME.racketChargeTimer != null) {
+            PS.timerStop(TENNIS_GAME.racketChargeTimer);
+            TENNIS_GAME.racketChargeTimer = null;
+        }
+        TENNIS_GAME.racketColor = TENNIS_GAME.CONSTANTS.RACKET_COLOR;
+        if (TENNIS_GAME.racketChargeAlpha > TENNIS_GAME.racketChargeAlphaActive) {
+            TENNIS_GAME.racketChargeAlphaActive = TENNIS_GAME.racketChargeAlpha;
+        }
+        TENNIS_GAME.racketChargeAlpha = 0;
+        TENNIS_GAME.racketChargeTimeActive = TENNIS_GAME.CONSTANTS.RACKET_CHARGE_ACTIVE_TIME;
+    }
+}
 
 
 // Pulls the racket in the direction (> 0 pulls down, < 0 pulls up) 
 TENNIS_GAME.HANDLER.pullRacket = function(direction) {
-    TENNIS_GAME.racketVelocity += direction * TENNIS_GAME.CONSTANTS.RACKET_VELOCITY;
+    if (TENNIS_GAME.swingInputCooldown == 0) {
+        TENNIS_GAME.racketVelocity += direction * TENNIS_GAME.CONSTANTS.RACKET_VELOCITY;
+    }
 }
 
 // Sets a flag for whether movement in the specified direction should be on
@@ -54,7 +124,9 @@ TENNIS_GAME.HANDLER.calculateBallPoints = function(ball, edgePivot) {
         TENNIS_GAME.CONSTANTS.POINTS_OUT_X_MAX,
         1 - (edgeX / TENNIS_GAME.CONSTANTS.GRID_WIDTH)
     );
-    const points = TENNIS_GAME.UTIL.floorToMultiple(speedPoints + outXPoints, TENNIS_GAME.CONSTANTS.POINTS_MULTIPLE);
+    const points = TENNIS_GAME.UTIL.floorToMultiple(
+        (speedPoints + outXPoints) * (ball.multiplier ?? 1), TENNIS_GAME.CONSTANTS.POINTS_MULTIPLE
+    );
     return [points, 0];
 }
 
@@ -64,12 +136,22 @@ TENNIS_GAME.HANDLER.handleBallHit = function(ball) {
     if (ball.hitTimer == null) {
         ball.hitStartColor =
             isSlow ? TENNIS_GAME.CONSTANTS.BALL_SLOW_START_COLOR : ball.color;
+        const charging = TENNIS_GAME.racketChargeTimeActive > 0;
+        var hitColor = TENNIS_GAME.CONSTANTS.BALL_FAST_HIT_COLOR;
+        if (charging) {
+            // Change color if charging
+            hitColor = TENNIS_GAME.UTIL.lerpColor(
+                hitColor, TENNIS_GAME.CONSTANTS.BALL_FAST_HIT_CHARGE_COLOR,
+                TENNIS_GAME.racketChargeAlphaActive
+            )
+        }
         ball.hitEndColor =
             isSlow ? TENNIS_GAME.CONSTANTS.BALL_SLOW_END_COLOR : TENNIS_GAME.UTIL.lerpColor(
-                ball.color, TENNIS_GAME.CONSTANTS.BALL_FAST_HIT_LERP_COLOR,
-                TENNIS_GAME.CONSTANTS.BALL_FAST_HIT_LERP_ALPHA
+                ball.color, hitColor, TENNIS_GAME.CONSTANTS.BALL_FAST_HIT_LERP_ALPHA
             );
         ball.hitTimer = 0;
+        ball.multiplier =
+            charging ? (1 + (TENNIS_GAME.racketChargeAlphaActive * TENNIS_GAME.CONSTANTS.BALL_CHARGE_ALPHA_MULTIPLIER)) : 1;
     }
     const alpha = ball.hitTimer / TENNIS_GAME.CONSTANTS.BALL_FADE_STEPS;
     if (alpha <= 1) {
@@ -97,10 +179,11 @@ TENNIS_GAME.HANDLER.handleBallOutOfBounds = function(ball, edgePivot) {
         // Give points
         const [points, pointAlpha] = TENNIS_GAME.HANDLER.calculateBallPoints(ball, edgePivot);
         TENNIS_GAME.points += points
-        // TENNIS_GAME.pointDisplays.push({
-        //     points: points,
-        //     pointAlpha: pointAlpha,
-        // });
+        TENNIS_GAME.statusFlashTime = 0;
+        TENNIS_GAME.statusFlashColor =
+            ball.multiplier == (1 + TENNIS_GAME.CONSTANTS.BALL_CHARGE_ALPHA_MULTIPLIER) ?
+            TENNIS_GAME.CONSTANTS.LEVEL_STATUS_POINT_FLASH_GOLD_COLOR :
+            TENNIS_GAME.CONSTANTS.LEVEL_STATUS_POINT_FLASH_COLOR;
 
         // End tutorial if active
         if (TENNIS_GAME.tutorial) {
@@ -178,15 +261,18 @@ TENNIS_GAME.HANDLER.getCurrentDifficulty = function() {
         speed = 0.75;
     }
     else if (TENNIS_GAME.points > 75000) {
-        speed = 0.6;
+        speed = 0.7;
     }
     else if (TENNIS_GAME.points > 50000) {
-        speed = 0.5;
+        speed = 0.6;
     }
     else if (TENNIS_GAME.points > 25000) {
-        speed = 0.4;
+        speed = 0.5;
     }
     else if (TENNIS_GAME.points > 10000) {
+        speed = 0.4;
+    }
+    else if (TENNIS_GAME.points > 2000) {
         speed = 0.3;
     }
     else {
@@ -310,9 +396,14 @@ TENNIS_GAME.HANDLER.handleRacketBallHits = function(racketSpeed, angleStart, ang
                 const direction = TENNIS_GAME.UTIL.normalizePivot(
                     TENNIS_GAME.UTIL.rotatePivot(offset, offsetAngle)
                 );
-                ball.speed += racketSpeed * TENNIS_GAME.CONSTANTS.BALL_FAST_DEFLECT_SPEED_FACTOR;
+                ball.speed += racketSpeed * TENNIS_GAME.CONSTANTS.BALL_FAST_DEFLECT_SPEED_FACTOR * (ball.multiplier ?? 1);
                 ball.direction = direction;
-                PS.audioPlay("fx_blast2");
+                if (TENNIS_GAME.racketChargeAlphaActive == 1) {
+                    PS.audioPlay("fx_bang", {volume: 1 + TENNIS_GAME.racketChargeAlphaActive});
+                }
+                else {
+                    PS.audioPlay("fx_blast2");
+                }
             }
             else {
                 // Stop ball if slow
@@ -325,6 +416,16 @@ TENNIS_GAME.HANDLER.handleRacketBallHits = function(racketSpeed, angleStart, ang
 
 // Updates racket position based on current velocity + angle
 TENNIS_GAME.HANDLER.updateRacketPosition = function() {
+    if (TENNIS_GAME.swingInputCooldown > 0) {
+        TENNIS_GAME.swingInputCooldown--;
+    }
+    if (TENNIS_GAME.racketChargeTimeActive > 0) {
+        TENNIS_GAME.racketChargeTimeActive--;
+    }
+    else {
+        TENNIS_GAME.racketChargeAlphaActive = 0;
+    }
+
     // Apply racket velocity to angle
     TENNIS_GAME.racketVelocity = TENNIS_GAME.UTIL.toward(
         TENNIS_GAME.racketVelocity, 0, TENNIS_GAME.CONSTANTS.RACKET_DECELERATION
@@ -341,6 +442,7 @@ TENNIS_GAME.HANDLER.updateRacketPosition = function() {
     );
     if (clampedAngle != newAngle) {
         TENNIS_GAME.racketVelocity = 0;
+        TENNIS_GAME.swingInputCooldown = TENNIS_GAME.CONSTANTS.SWING_TIME_COOLDOWN;
     }
 
     // Update active angle
@@ -370,7 +472,7 @@ TENNIS_GAME.HANDLER.drawBalls = function() {
 TENNIS_GAME.HANDLER.drawPlayer = function() {
     TENNIS_GAME.UTIL.drawSprite(TENNIS_GAME.playerPosition, TENNIS_GAME.CONSTANTS.PLAYER_SPRITE);
     TENNIS_GAME.racketCells.forEach(cell => {
-        TENNIS_GAME.UTIL.fillPivot(cell, TENNIS_GAME.CONSTANTS.RACKET_COLOR);
+        TENNIS_GAME.UTIL.fillPivot(cell, TENNIS_GAME.racketColor);
     })
 }
 
@@ -404,7 +506,31 @@ TENNIS_GAME.HANDLER.drawUI = function() {
         else {
             // Display points
             PS.statusText(`Points: ${TENNIS_GAME.points}`);
-            PS.statusColor(TENNIS_GAME.CONSTANTS.LEVEL_STATUS_COLOR);
+            var statusColor = TENNIS_GAME.CONSTANTS.LEVEL_STATUS_COLOR;
+            if (TENNIS_GAME.statusFlashColor != null) {
+                var flashAlpha = 0;
+                if (TENNIS_GAME.statusFlashTime <= TENNIS_GAME.CONSTANTS.LEVEL_STATUS_FLASH_IN_TIME) {
+                    flashAlpha = TENNIS_GAME.statusFlashTime / TENNIS_GAME.CONSTANTS.LEVEL_STATUS_FLASH_IN_TIME;
+                }
+                else if (TENNIS_GAME.statusFlashTime <= TENNIS_GAME.CONSTANTS.LEVEL_STATUS_FLASH_IN_TIME +
+                    TENNIS_GAME.CONSTANTS.LEVEL_STATUS_FLASH_OUT_TIME
+                ) {
+                    flashAlpha = 1 - (
+                        (TENNIS_GAME.statusFlashTime - TENNIS_GAME.CONSTANTS.LEVEL_STATUS_FLASH_IN_TIME) /
+                        TENNIS_GAME.CONSTANTS.LEVEL_STATUS_FLASH_OUT_TIME
+                    );
+                }
+                else {
+                    TENNIS_GAME.statusFlashColor = null;
+                }
+                TENNIS_GAME.statusFlashTime++;
+                if (flashAlpha > 0) {
+                    statusColor = TENNIS_GAME.UTIL.lerpColor(
+                        statusColor, TENNIS_GAME.statusFlashColor, flashAlpha
+                    );
+                }
+            }
+            PS.statusColor(statusColor);
         }
     }
 
@@ -452,6 +578,8 @@ TENNIS_GAME.HANDLER.update = function() {
 TENNIS_GAME.HANDLER.start = function() {
     
     // Load and lock audio
+	PS.audioLoad("fx_bang", {lock: true});
+	// PS.audioLoad("fx_squink", {lock: true});
 	PS.audioLoad("fx_blast2", {lock: true});
 	PS.audioLoad("fx_bucket", {lock: true});
 	PS.audioLoad("fx_scratch", {lock: true});
@@ -469,6 +597,7 @@ TENNIS_GAME.HANDLER.start = function() {
     TENNIS_GAME.points = 0;
     TENNIS_GAME.tutorial = true;
     TENNIS_GAME.racketAngle = TENNIS_GAME.CONSTANTS.RACKET_ANGLE_INIT;
+    TENNIS_GAME.racketColor = TENNIS_GAME.CONSTANTS.RACKET_COLOR;
     TENNIS_GAME.playerMoveFlags = new Set();
     TENNIS_GAME.playerPosition = [TENNIS_GAME.CONSTANTS.PLAYER_SPAWN_X, TENNIS_GAME.CONSTANTS.PLAYER_SPAWN_Y];
     
