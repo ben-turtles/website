@@ -35,7 +35,7 @@ TENNIS_GAME.statusFlashTime = 0;
 
 // Toggles racket charge
 TENNIS_GAME.HANDLER.toggleRacketCharge = function(isCharging) {
-    if (isCharging && TENNIS_GAME.racketChargeTimer == null) {
+    if (!TENNIS_GAME.gameOver && isCharging && TENNIS_GAME.racketChargeTimer == null) {
         const chargeTimer = TENNIS_GAME.CONSTANTS.RACKET_CHARGE_TIME;
         var chargeCount = 0;
         // var playedChargeSound = false;
@@ -182,11 +182,16 @@ TENNIS_GAME.HANDLER.handleBallOutOfBounds = function(ball, edgePivot) {
         const [points, pointAlpha] = TENNIS_GAME.HANDLER.calculateBallPoints(ball, edgePivot);
         TENNIS_GAME.points += points
         TENNIS_GAME.statusFlashTime = 0;
+        const isMaxMultiplier = ball.multiplier == (1 + TENNIS_GAME.CONSTANTS.BALL_CHARGE_ALPHA_MULTIPLIER);
         TENNIS_GAME.statusFlashColor =
-            ball.multiplier == (1 + TENNIS_GAME.CONSTANTS.BALL_CHARGE_ALPHA_MULTIPLIER) ?
+            isMaxMultiplier ?
             TENNIS_GAME.CONSTANTS.LEVEL_STATUS_POINT_FLASH_GOLD_COLOR :
             TENNIS_GAME.CONSTANTS.LEVEL_STATUS_POINT_FLASH_COLOR;
-
+        
+        if (isMaxMultiplier) {
+            PS.audioPlay("fx_cheer", {path: "./", fileTypes: ["wav"]});
+        }
+        
         // End tutorial if active
         if (TENNIS_GAME.tutorial) {
             TENNIS_GAME.tutorial = false;
@@ -618,6 +623,7 @@ TENNIS_GAME.HANDLER.start = function() {
 	PS.audioLoad("fx_scratch", {lock: true});
 	PS.audioLoad("fx_swoosh", {lock: true});
 	PS.audioLoad("fx_wilhelm", {lock: true});
+	PS.audioLoad("fx_cheer", {lock: true, path: "./", fileTypes: ["wav"]});
 	PS.audioLoad("fx_airhorn", {lock: true, path: "./", fileTypes: ["wav"]});
     /*
     TODO STUFF
