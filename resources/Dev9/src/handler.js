@@ -4,10 +4,12 @@
 
 TENNIS_GAME.HANDLER = {};
 
+TENNIS_GAME.gameOver = false;
 TENNIS_GAME.points = 0;
 TENNIS_GAME.tutorial = false;
 TENNIS_GAME.readyDisplayTimer = 0;
 TENNIS_GAME.marks = 0;
+TENNIS_GAME.markTimer = 0;
 
 TENNIS_GAME.playerPosition = null;   // [x, y] pos
 TENNIS_GAME.playerMoveFlags = null;
@@ -194,7 +196,8 @@ TENNIS_GAME.HANDLER.handleBallOutOfBounds = function(ball, edgePivot) {
     }
     else if (!TENNIS_GAME.tutorial) {
         // Not hit, and not tutorial; mark player
-        TENNIS_GAME.marks += 1;
+        TENNIS_GAME.marks++;
+        TENNIS_GAME.markTimer = 0;
         PS.audioPlay("fx_scratch");
         if (TENNIS_GAME.ballSpawnTimer == 0) {
             TENNIS_GAME.ballSpawnTimer = 1;
@@ -480,10 +483,42 @@ TENNIS_GAME.HANDLER.drawPlayer = function() {
 TENNIS_GAME.HANDLER.drawMarks = function() {
     for (let mark = 0; mark < TENNIS_GAME.CONSTANTS.MARK_COUNT; mark++) {
         const markPivot = TENNIS_GAME.CONSTANTS.MARK_PIVOTS[mark];
-        TENNIS_GAME.UTIL.fillPivot(markPivot, TENNIS_GAME.CONSTANTS.MARK_COLOR);
+        var markColor = TENNIS_GAME.CONSTANTS.MARK_COLOR;
         if (mark < TENNIS_GAME.marks) {
-            TENNIS_GAME.UTIL.fillGlyph(markPivot, TENNIS_GAME.CONSTANTS.MARK_GLYPH, TENNIS_GAME.CONSTANTS.MARK_GLYPH_COLOR);
+            // Mark is here
+            var showMark = true;
+
+            // Update last marker color using flash if timer active
+            if (TENNIS_GAME.markTimer >= 0 && mark == TENNIS_GAME.marks - 1) {
+                var flashAlpha = 0;
+                if (TENNIS_GAME.markTimer <= TENNIS_GAME.CONSTANTS.MARK_FLASH_IN_TIME) {
+                    flashAlpha = TENNIS_GAME.markTimer / TENNIS_GAME.CONSTANTS.MARK_FLASH_IN_TIME;
+                }
+                else if (TENNIS_GAME.markTimer <= TENNIS_GAME.CONSTANTS.MARK_FLASH_IN_TIME +
+                    TENNIS_GAME.CONSTANTS.MARK_FLASH_OUT_TIME
+                ) {
+                    flashAlpha = 1 - (
+                        (TENNIS_GAME.markTimer - TENNIS_GAME.CONSTANTS.MARK_FLASH_IN_TIME) /
+                        TENNIS_GAME.CONSTANTS.MARK_FLASH_OUT_TIME
+                    );
+                }
+                else {
+                    TENNIS_GAME.markTimer = -1;
+                }
+                if (TENNIS_GAME.markTimer >= 0) {
+                    TENNIS_GAME.markTimer++;
+                    if (flashAlpha > 0) {
+                        markColor = TENNIS_GAME.UTIL.lerpColor(
+                            markColor, TENNIS_GAME.CONSTANTS.MARK_FLASH_COLOR, flashAlpha
+                        );
+                    }
+                }
+            }
+            if (showMark) {
+                TENNIS_GAME.UTIL.fillGlyph(markPivot, TENNIS_GAME.CONSTANTS.MARK_GLYPH, TENNIS_GAME.CONSTANTS.MARK_GLYPH_COLOR);
+            }
         }
+        TENNIS_GAME.UTIL.fillPivot(markPivot, markColor);
     }
 }
 
@@ -496,7 +531,7 @@ TENNIS_GAME.HANDLER.drawUI = function() {
         PS.statusText(TENNIS_GAME.CONSTANTS.LEVEL_TUTORIAL_STATUS);
         PS.statusColor(TENNIS_GAME.CONSTANTS.LEVEL_TUTORIAL_STATUS_COLOR);
     }
-    else {
+    else if (!TENNIS_GAME.gameOver) {
         if (TENNIS_GAME.readyDisplayTimer > 0) {
             // Display ready status now that tutorial is over
             TENNIS_GAME.readyDisplayTimer--;
@@ -548,27 +583,25 @@ TENNIS_GAME.HANDLER.draw = function() {
 
 // Called every game step
 TENNIS_GAME.HANDLER.update = function() {
-    if (TENNIS_GAME.marks < 0) {
-        // Game over state, no update
-        return;
-    }
-    else if (TENNIS_GAME.marks >= TENNIS_GAME.CONSTANTS.MARK_COUNT) {
-        // Now in game over, draw final state
+    if (!TENNIS_GAME.gameOver && TENNIS_GAME.marks >= TENNIS_GAME.CONSTANTS.MARK_COUNT) {
+        // Now in game over state
         TENNIS_GAME.HANDLER.draw();
+        TENNIS_GAME.gameOver = true;
         PS.statusText(`GAME OVER! You got ${TENNIS_GAME.points} points!`);
         PS.statusColor(TENNIS_GAME.CONSTANTS.LEVEL_GAME_OVER_COLOR);
         PS.audioPlay("fx_wilhelm");
-        TENNIS_GAME.marks = -1;
         return;
     }
 
-    // Update player
-    TENNIS_GAME.HANDLER.updatePlayerPosition();
-    TENNIS_GAME.HANDLER.updateRacketPosition();
+    if (!TENNIS_GAME.gameOver) {
+        // Update player
+        TENNIS_GAME.HANDLER.updatePlayerPosition();
+        TENNIS_GAME.HANDLER.updateRacketPosition();
 
-    // Update balls
-    TENNIS_GAME.HANDLER.updateBalls();
-    TENNIS_GAME.HANDLER.spawnBalls();
+        // Update balls
+        TENNIS_GAME.HANDLER.updateBalls();
+        TENNIS_GAME.HANDLER.spawnBalls();
+    }
 
     // Draw screen
     TENNIS_GAME.HANDLER.draw();
@@ -594,6 +627,7 @@ TENNIS_GAME.HANDLER.start = function() {
     // Set defaults
     TENNIS_GAME.balls = [];
     TENNIS_GAME.marks = 0;
+    TENNIS_GAME.markTimer = 0;
     TENNIS_GAME.points = 0;
     TENNIS_GAME.tutorial = true;
     TENNIS_GAME.racketAngle = TENNIS_GAME.CONSTANTS.RACKET_ANGLE_INIT;
